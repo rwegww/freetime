@@ -1,0 +1,17 @@
+{
+  "name": "freetime-team-scheduler",
+  "version": "1.0.0",
+  "description": "Ứng dụng đăng ký lịch làm việc, tự động suy ra giờ trống của nhóm và nhắn tin trao đổi thời gian thực",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "db:migrate": "node supabase/migrate.js",
+    "db:push": "node supabase/push.js",
+    "test": "node --test tests/availability.test.js tests/api.test.js tests/socket.test.js tests/auth.test.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "pg": "^8.23.1",
+    "socket.io": "^4.8.1"
+  }
+}

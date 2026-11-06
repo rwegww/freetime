@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>FreeTime Sync — Đăng Ký Lịch Làm Việc & Nhắn Tin Nhóm</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/calendar.css" />
+  <link rel="stylesheet" href="/css/chat.css" />
+  <link rel="stylesheet" href="/css/auth.css" />
+</head>
+<body data-mobile-tab="schedule" data-app-stage="auth">
+  <!-- ==================== MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ ==================== -->
+  <section class="auth-screen" id="authScreen">
+    <div class="auth-shell">
+      <div class="auth-hero">
+        <div class="auth-brand-row">
+          <div class="auth-brand-badge">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+          </div>
+          <div>
+            <strong>FreeTime Sync</strong>
+            <span>Lịch làm việc & Trò chuyện nhóm</span>
+          </div>
+        </div>
+
+        <div class="auth-hero-copy">
+          <h2>Đồng bộ lịch bận, tìm giờ trống & trò chuyện chung theo từng nhóm.</h2>
+          <p>Tạo tài khoản cá nhân trong vài giây, lập nhóm riêng hoặc nhập mã mời để kết nối ngay vào bảng lịch và phòng trò chuyện chung của nhóm.</p>
+        </div>
+
+        <ul class="auth-feature-list">
+          <li>📅 Tự động suy ra các khung giờ cả nhóm cùng rảnh</li>
+          <li>💬 Mỗi nhóm có phòng trò chuyện & bình chọn lịch hẹn riêng</li>
+          <li>📱 Đồng bộ tức thì trên cả máy tính và điện thoại</li>
+        </ul>
+      </div>
+
+      <div class="auth-form-pane">
+        <div class="auth-mobile-brand">
+          <div class="brand-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+          </div>
+          <div>
+            <h1 class="brand-title">FreeTime Sync</h1>
+            <p class="brand-subtitle">Đăng nhập hoặc tạo tài khoản mới</p>
+          </div>
+        </div>
+
+        <div class="auth-invite-banner hidden" id="authInviteBanner"></div>
+
+        <div class="auth-tabs" role="tablist">
+          <button type="button" class="auth-tab-btn active" id="tabAuthLogin" data-auth-tab="login">Đăng nhập</button>
+          <button type="button" class="auth-tab-btn" id="tabAuthRegister" data-auth-tab="register">Đăng ký mới</button>
+        </div>
+
+        <div class="auth-error-box hidden" id="authErrorBox"></div>
+
+        <!-- Form Đăng nhập -->
+        <form id="loginForm" class="auth-form">
+          <div class="form-row">
+            <label for="loginUsername">Tên đăng nhập hoặc Email *</label>
+            <input type="text" id="loginUsername" class="modal-input" placeholder="VD: minhanh hoặc minhanh@company.com" autocomplete="username" required />
+          </div>
+          <div class="form-row">
+            <label for="loginPassword">Mật khẩu *</label>
+            <div class="password-field-wrap">
+              <input type="password" id="loginPassword" class="modal-input" placeholder="Nhập mật khẩu" autocomplete="current-password" required />
+              <button type="button" class="btn-toggle-pw" data-toggle-pw="loginPassword">Hiện</button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary btn-auth-submit full-width" id="btnLoginSubmit">Đăng nhập</button>
+        </form>
+
+        <!-- Form Đăng ký người dùng mới -->
+        <form id="registerForm" class="auth-form hidden">
+          <div class="form-row">
+            <label for="regName">Họ và tên hiển thị *</label>
+            <input type="text" id="regName" class="modal-input" placeholder="VD: Nguyễn Tuấn Kiệt" autocomplete="name" required />
+          </div>
+          <div class="form-row-inline stack-on-xs">
+            <div style="flex: 1.3;">
+              <label for="regUsername">Tên đăng nhập / Email *</label>
+              <input type="text" id="regUsername" class="modal-input" placeholder="VD: tuankiet" autocomplete="username" required />
+            </div>
+            <div style="flex: 1;">
+              <label for="regRole">Vai trò / Vị trí</label>
+              <input type="text" id="regRole" class="modal-input" placeholder="VD: Developer, Sale..." />
+            </div>
+          </div>
+          <div class="form-row">
+            <label for="regPassword">Mật khẩu * (tối thiểu 6 ký tự)</label>
+            <div class="password-field-wrap">
+              <input type="password" id="regPassword" class="modal-input" placeholder="Tạo mật khẩu đăng nhập" autocomplete="new-password" minlength="6" required />
+              <button type="button" class="btn-toggle-pw" data-toggle-pw="regPassword">Hiện</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Màu đại diện trong nhóm</label>
+            <div class="color-picker-row" id="regColorPicker">
+              <button type="button" class="color-swatch selected" data-color="#6366f1" style="background:#6366f1"></button>
+              <button type="button" class="color-swatch" data-color="#10b981" style="background:#10b981"></button>
+              <button type="button" class="color-swatch" data-color="#f59e0b" style="background:#f59e0b"></button>
+              <button type="button" class="color-swatch" data-color="#ec4899" style="background:#ec4899"></button>
+              <button type="button" class="color-swatch" data-color="#06b6d4" style="background:#06b6d4"></button>
+              <button type="button" class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6"></button>
+              <button type="button" class="color-swatch" data-color="#ef4444" style="background:#ef4444"></button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary btn-auth-submit full-width" id="btnRegisterSubmit">Tạo tài khoản & Tiếp tục</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== MÀN HÌNH CHỌN / TẠO NHÓM CHO TÀI KHOẢN MỚI ==================== -->
+  <section class="onboarding-screen" id="groupOnboardingScreen">
+    <div class="onboarding-container">
+      <div class="onboarding-topbar">
+        <div class="onboarding-user-greet">
+          <span class="avatar-circle" id="onboardingUserAvatar">TK</span>
+          <div>
+            <strong id="onboardingUserName">Xin chào!</strong>
+            <span id="onboardingUserUsername">@username • Hãy tạo nhóm mới hoặc nhập mã nhóm để bắt đầu</span>
+          </div>
+        </div>
+        <button type="button" class="btn-danger-outline" id="btnOnboardingLogout">Đăng xuất</button>
+      </div>
+
+      <div class="onboarding-grid">
+        <!-- Thẻ 1: Tạo nhóm mới -->
+        <div class="onboarding-card">
+          <span class="onboarding-card-badge">✨ Trưởng nhóm</span>
+          <h3>Tạo nhóm làm việc mới</h3>
+          <p>Lập không gian lịch và cuộc trò chuyện riêng cho nhóm của bạn, sau đó gửi mã mời cho các thành viên khác.</p>
+          <form id="onboardingCreateGroupForm" class="add-member-form">
+            <div class="form-row">
+              <label for="onboardGroupName">Tên nhóm *</label>
+              <input type="text" id="onboardGroupName" class="modal-input" placeholder="VD: Nhóm Đồ Án Web, Team Vận Hành..." required />
+            </div>
+            <div class="form-row-inline stack-on-xs">
+              <div style="flex: 1;">
+                <label for="onboardGroupCode">Mã nhóm (tùy chọn)</label>
+                <input type="text" id="onboardGroupCode" class="modal-input" placeholder="Để trống tự tạo mã" />
+              </div>
+              <div style="flex: 1.4;">
+                <label for="onboardGroupDesc">Mô tả ngắn</label>
+                <input type="text" id="onboardGroupDesc" class="modal-input" placeholder="VD: Lịch ca trực & họp tuần" />
+              </div>
+            </div>
+            <button type="submit" class="btn-primary full-width">+ Tạo nhóm & Mở trò chuyện chung</button>
+          </form>
+        </div>
+
+        <!-- Thẻ 2: Tham gia nhóm có sẵn -->
+        <div class="onboarding-card">
+          <span class="onboarding-card-badge emerald">🔑 Thành viên</span>
+          <h3>Tham gia nhóm bằng mã mời</h3>
+          <p>Nhập mã nhóm từ bạn bè hoặc đồng nghiệp để vào thẳng bảng lịch và cuộc trò chuyện chung của nhóm đó.</p>
+          <form id="onboardingJoinGroupForm" class="add-member-form">
+            <div class="form-row">
+              <label for="onboardJoinCode">Mã nhóm *</label>
+              <input type="text" id="onboardJoinCode" class="modal-input" placeholder="VD: FT8K2M hoặc TEAM01" required />
+            </div>
+            <button type="submit" class="btn-primary full-width">Vào nhóm & Trò chuyện ngay</button>
+          </form>
+          <div class="demo-room-hint">
+            <span>Muốn trải nghiệm nhanh với dữ liệu mẫu?</span>
+            <button type="button" class="btn-link-sm" id="btnTryDemoGroup">Vào nhóm mẫu #TEAM01 →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== HEADER KHÔNG GIAN LÀM VIỆC ==================== -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">FreeTime Sync</h1>
+          <p class="brand-subtitle">Lịch làm việc & giờ trống của nhóm</p>
+        </div>
+      </div>
+
+      <div class="room-badge-group">
+        <button id="btnOpenRoomModal" class="room-pill" title="Chuyển nhóm, tạo nhóm mới hoặc tham gia nhóm khác">
+          <span class="room-code-tag" id="headerRoomCode">TEAM01</span>
+          <span class="room-name-text" id="headerRoomName">Nhóm Dự Án & Vận Hành</span>
+          <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <button id="btnCopyRoomLink" class="btn-ghost btn-invite" title="Sao chép link mời bạn bè vào nhóm này" aria-label="Sao chép link mời nhóm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span class="btn-label">Mời vào nhóm</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Week Selector -->
+    <div class="header-center">
+      <div class="week-switcher">
+        <button id="btnPrevWeek" class="week-nav-btn" title="Tuần trước" aria-label="Tuần trước">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div class="week-label-box">
+          <span class="week-title" id="currentWeekLabel">Tuần hiện tại</span>
+          <span class="week-dates" id="currentWeekRange">--/-- - --/--</span>
+        </div>
+        <button id="btnNextWeek" class="week-nav-btn" title="Tuần sau" aria-label="Tuần sau">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+      <button id="btnTodayWeek" class="btn-ghost btn-today">Hôm nay</button>
+    </div>
+
+    <!-- Current Logged-in Account -->
+    <div class="header-right">
+      <button id="btnOpenMemberModal" class="user-profile-btn" title="Hồ sơ tài khoản & Đăng xuất">
+        <span class="avatar-circle" id="activeUserAvatar">MA</span>
+        <div class="user-info-text">
+          <strong id="activeUserName">Tài khoản</strong>
+          <small id="activeUserRole">Hồ sơ • Tài khoản</small>
+        </div>
+        <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="main-two-sections">
+    <!-- ==================== PHẦN 1: ĐĂNG KÝ LỊCH LÀM VIỆC & SUY RA GIỜ TRỐNG ==================== -->
+    <section class="section-schedule card" id="scheduleSectionCard">
+      <div class="section-head">
+        <div class="section-title-group">
+          <div class="section-icon icon-indigo" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+          </div>
+          <div class="section-title-copy">
+            <h2>Lịch làm việc của nhóm</h2>
+            <p>Nhấn vào từng ô giờ để đăng ký lịch bận của <strong id="toolbarMemberName">bạn</strong> <span class="hide-xs">— giờ trống chung được tính tự động.</span></p>
+          </div>
+        </div>
+        <div class="sync-badge" id="syncStatusIndicator">
+          <span class="sync-dot"></span>
+          <span id="syncStatusText">Đã đồng bộ</span>
+        </div>
+      </div>
+
+      <!-- Thanh công cụ -->
+      <div class="register-toolbar">
+        <div class="toolbar-primary-row">
+          <div class="segmented" role="tablist" aria-label="Chế độ thao tác trên lịch">
+            <button id="btnModeBusy" class="mode-pill active" data-mode="busy" title="Nhấn vào ô để đánh dấu hoặc bỏ chọn giờ bận">
+              <span class="dot dot-busy"></span>
+              <span>Đăng ký <span class="hide-xxs">bận</span></span>
+            </button>
+            <button id="btnModeFree" class="mode-pill" data-mode="free" title="Nhấn vào ô để xóa giờ bận">
+              <span class="dot dot-free"></span>
+              <span>Xóa <span class="hide-xxs">(trống)</span></span>
+            </button>
+            <button id="btnModeInspect" class="mode-pill" data-mode="inspect" title="Chạm vào ô bất kỳ để xem chi tiết & đề xuất giờ hẹn">
+              <span class="dot dot-inspect"></span>
+              <span>Chi tiết</span>
+            </button>
+          </div>
+
+          <button type="button" id="btnToggleMobileTools" class="btn-mobile-tools" aria-expanded="false" title="Mở ca mẫu, ghi chú & lọc thành viên">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="18" r="2" fill="currentColor"/></svg>
+            <span>Tùy chọn</span>
+            <span class="filter-active-dot hidden" id="mobileFilterActiveDot"></span>
+          </button>
+        </div>
+
+        <div class="toolbar-collapsible" id="toolbarCollapsible">
+          <div class="note-input-group">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            <input
+              type="text"
+              id="busyNoteInput"
+              class="input-compact"
+              placeholder="Ghi chú ca làm (VD: Ca sáng, Họp...)"
+              value="Ca làm việc"
+              aria-label="Ghi chú ca làm"
+            />
+          </div>
+
+          <div class="toolbar-divider"></div>
+
+          <div class="preset-group">
+            <span class="toolbar-label">Nhanh T2–T6</span>
+            <button class="btn-preset" data-preset="office" title="8h-12h & 13h-17h">Hành chính</button>
+            <button class="btn-preset" data-preset="morning" title="8h-12h">Sáng</button>
+            <button class="btn-preset" data-preset="afternoon" title="13h-17h">Chiều</button>
+            <button class="btn-preset" data-preset="evening" title="18h-21h">Tối</button>
+            <button class="btn-preset danger" data-preset="clear" title="Xóa toàn bộ lịch tuần này của bạn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+              Xóa tuần
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Giờ trống chung -->
+      <div class="insight-strip">
+        <div class="insight-stats">
+          <div class="stat">
+            <span class="stat-value" id="statAllFreeHours">0 khung giờ</span>
+            <span class="stat-label">cả nhóm cùng trống</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value stat-busy" id="statMyBusyHours">0h làm việc</span>
+            <span class="stat-label">của bạn · <span id="statMyFreeHours">0h trống</span></span>
+          </div>
+        </div>
+
+        <div class="insight-slots">
+          <span class="insight-label">Gợi ý khung trống dài nhất</span>
+          <div id="bestSlotsList" class="best-slots-cards"></div>
+        </div>
+
+        <div class="insight-filter">
+          <div class="filter-label-row">
+            <span class="insight-label">Tính cho</span>
+            <button id="btnSelectAllMembers" class="btn-link-sm">Chọn tất cả</button>
+          </div>
+          <div id="memberFilterChips" class="member-chips-container"></div>
+        </div>
+      </div>
+
+      <!-- Chú thích -->
+      <div class="grid-legend-bar">
+        <div class="legend-items">
+          <span class="legend-item"><i class="swatch swatch-my-busy"></i> Bạn bận</span>
+          <span class="legend-item"><i class="swatch swatch-100"></i> Cả nhóm trống</span>
+          <span class="legend-item"><i class="swatch swatch-partial"></i> Một phần trống</span>
+          <span class="legend-item hide-xs"><i class="swatch swatch-none"></i> Kín lịch</span>
+        </div>
+        <span class="legend-hint">Nhấn vào từng ô để chọn / bỏ chọn · Nhấn giữ hoặc chọn <strong>Chi tiết</strong> để xem ai rảnh</span>
+      </div>
+
+      <!-- Bộ chọn ngày nhanh cho điện thoại -->
+      <div class="mobile-day-strip" id="mobileDayStrip" role="tablist" aria-label="Chọn ngày hiển thị"></div>
+
+      <div class="calendar-table-wrapper" id="calendarTableWrapper">
+        <table class="schedule-grid-table" id="unifiedScheduleTable" data-mobile-day="all">
+          <thead>
+            <tr id="unifiedTableHeadRow">
+              <th class="time-col-header"></th>
+            </tr>
+          </thead>
+          <tbody id="unifiedScheduleBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== PHẦN 2: NHẮN TIN NHÓM ==================== -->
+    <aside class="section-chat card" id="chatSectionCard">
+      <div class="section-head">
+        <div class="section-title-group">
+          <div class="section-icon icon-emerald" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div>
+            <h2>Trò chuyện chung của nhóm</h2>
+            <p>Chỉ các thành viên trong nhóm này</p>
+          </div>
+        </div>
+        <span class="online-badge" id="chatOnlineBadge">1 online</span>
+      </div>
+
+      <div class="chat-members-bar" id="chatMembersAvatars"></div>
+
+      <div class="chat-messages-container" id="chatMessagesList"></div>
+
+      <div class="chat-typing-indicator hidden" id="chatTypingIndicator">
+        <span class="typing-dots"><i></i><i></i><i></i></span>
+        <span id="chatTypingText">Ai đó đang nhập...</span>
+      </div>
+
+      <div class="chat-quick-bar">
+        <button id="btnOpenProposalModal" class="btn-propose-slot" title="Đề xuất hẹn vào khung giờ trống tốt nhất">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Đề xuất giờ hẹn
+        </button>
+        <button id="btnShareMySummary" class="btn-propose-slot secondary" title="Báo cho nhóm biết bạn đã đăng ký lịch xong">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Báo đã đăng ký lịch
+        </button>
+      </div>
+
+      <form id="chatForm" class="chat-input-form">
+        <input
+          type="text"
+          id="chatInput"
+          placeholder="Nhắn tin vào cuộc trò chuyện chung..."
+          autocomplete="off"
+        />
+        <button type="submit" class="btn-send-msg" title="Gửi tin nhắn (Enter)" aria-label="Gửi">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+        </button>
+      </form>
+    </aside>
+  </main>
+
+  <!-- Thanh điều hướng dưới cùng cho Mobile & Tablet dọc -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Chuyển màn hình">
+    <button type="button" id="btnTabSchedule" class="mobile-nav-item active" data-tab="schedule">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+      <span>Lịch nhóm</span>
+      <span class="mobile-nav-pill" id="mobileTabFreeBadge">0 trống</span>
+    </button>
+    <button type="button" id="btnTabChat" class="mobile-nav-item" data-tab="chat">
+      <div class="mobile-nav-icon-wrap">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="mobile-unread-badge hidden" id="mobileChatUnreadBadge">0</span>
+      </div>
+      <span>Nhắn tin</span>
+    </button>
+  </nav>
+
+  <!-- MODAL 1: Chi tiết khung giờ -->
+  <div id="slotDetailModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-sheet-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <div>
+          <span class="modal-tag">Chi tiết khung giờ</span>
+          <h3 id="slotModalTitle">Thứ 6 • 14:00 - 15:00</h3>
+        </div>
+        <button class="modal-close-btn" data-close="slotDetailModal" aria-label="Đóng">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="slot-availability-summary" id="slotModalSummaryBanner"></div>
+
+        <div class="slot-columns">
+          <div class="slot-col free-col">
+            <h4><span class="dot dot-free"></span> Đang trống (<span id="slotFreeCount">0</span>)</h4>
+            <ul id="slotFreeMembersList" class="slot-member-list"></ul>
+          </div>
+          <div class="slot-col busy-col">
+            <h4><span class="dot dot-busy"></span> Đã đăng ký bận (<span id="slotBusyCount">0</span>)</h4>
+            <ul id="slotBusyMembersList" class="slot-member-list"></ul>
+          </div>
+        </div>
+
+        <div class="slot-propose-box">
+          <h4>Gửi đề xuất giờ hẹn vào cuộc trò chuyện nhóm</h4>
+          <div class="form-row">
+            <label for="slotProposeTitle">Nội dung buổi hẹn</label>
+            <input type="text" id="slotProposeTitle" class="modal-input" value="Họp nhóm / Trao đổi công việc" />
+          </div>
+          <div class="form-row-inline">
+            <div>
+              <label for="slotProposeStart">Bắt đầu</label>
+              <select id="slotProposeStart" class="modal-select"></select>
+            </div>
+            <div>
+              <label for="slotProposeEnd">Kết thúc</label>
+              <select id="slotProposeEnd" class="modal-select"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" data-close="slotDetailModal">Đóng</button>
+        <button id="btnToggleMySlotInModal" class="btn-outline">Đổi lịch của tôi</button>
+        <button id="btnSendSlotProposal" class="btn-primary">Gửi đề xuất</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Tài khoản cá nhân & Thành viên trong nhóm -->
+  <div id="memberModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-sheet-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <div>
+          <span class="modal-tag">Tài khoản cá nhân</span>
+          <h3>Hồ sơ của bạn & Thành viên nhóm</h3>
+        </div>
+        <button class="modal-close-btn" data-close="memberModal" aria-label="Đóng">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="account-summary-box">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+            <span class="avatar-circle" id="modalProfileAvatar">MA</span>
+            <div style="min-width:0;">
+              <strong id="modalProfileName" style="display:block;font-size:13.5px;">Tài khoản</strong>
+              <small id="accountUsernameDisplay" style="color:var(--text-muted);font-size:11.5px;">@username</small>
+            </div>
+          </div>
+          <button type="button" class="btn-danger-outline" id="btnLogout">Đăng xuất</button>
+        </div>
+
+        <form id="profileUpdateForm" class="add-member-form">
+          <div class="form-row-inline stack-on-xs">
+            <div style="flex: 1.5;">
+              <label for="profileNameInput">Họ và tên hiển thị *</label>
+              <input type="text" id="profileNameInput" class="modal-input" required />
+            </div>
+            <div style="flex: 1.2;">
+              <label for="profileRoleInput">Vai trò / Vị trí</label>
+              <input type="text" id="profileRoleInput" class="modal-input" placeholder="VD: Developer, Sale..." />
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Màu đại diện</label>
+            <div class="color-picker-row" id="memberColorPicker">
+              <button type="button" class="color-swatch selected" data-color="#6366f1" style="background:#6366f1"></button>
+              <button type="button" class="color-swatch" data-color="#10b981" style="background:#10b981"></button>
+              <button type="button" class="color-swatch" data-color="#f59e0b" style="background:#f59e0b"></button>
+              <button type="button" class="color-swatch" data-color="#ec4899" style="background:#ec4899"></button>
+              <button type="button" class="color-swatch" data-color="#06b6d4" style="background:#06b6d4"></button>
+              <button type="button" class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6"></button>
+              <button type="button" class="color-swatch" data-color="#ef4444" style="background:#ef4444"></button>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary full-width">Lưu thay đổi hồ sơ</button>
+        </form>
+
+        <div class="divider-text"><span>THÀNH VIÊN CÙNG NHÓM NÀY</span></div>
+        <div id="existingMembersSelectGrid" class="member-select-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Quản lý Nhóm của tôi, Tham gia nhóm & Tạo nhóm mới -->
+  <div id="roomModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-sheet-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <div>
+          <span class="modal-tag">Quản lý nhóm làm việc</span>
+          <h3>Nhóm của bạn & Mời thành viên</h3>
+        </div>
+        <button class="modal-close-btn" data-close="roomModal" aria-label="Đóng">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Hộp chia sẻ mã nhóm hiện tại -->
+        <div class="invite-share-card">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);">MÃ MỜI NHÓM HIỆN TẠI</div>
+            <div class="invite-code-big" id="currentInviteCodeDisplay">#TEAM01</div>
+          </div>
+          <div class="invite-share-actions">
+            <button type="button" class="btn-secondary" id="btnCopyModalCode">Sao chép mã</button>
+            <button type="button" class="btn-primary" id="btnCopyModalLink">Sao chép link mời</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>Các nhóm bạn đã tham gia</label>
+          <div id="existingRoomsList" class="rooms-list-box"></div>
+        </div>
+
+        <div class="divider-text"><span>THAM GIA NHÓM KHÁC BẰNG MÃ MỜI</span></div>
+
+        <form id="joinRoomByCodeForm" class="form-row-inline stack-on-xs">
+          <div style="flex: 1.5;">
+            <input type="text" id="joinRoomCodeInput" class="modal-input" placeholder="Nhập mã nhóm (VD: FT8K2M)" required />
+          </div>
+          <button type="submit" class="btn-outline" style="white-space:nowrap;">Vào nhóm</button>
+        </form>
+
+        <div class="divider-text"><span>HOẶC TẠO NHÓM MỚI</span></div>
+
+        <form id="createRoomForm" class="add-member-form">
+          <div class="form-row-inline stack-on-xs">
+            <div style="flex: 1.6;">
+              <label for="newRoomName">Tên nhóm mới *</label>
+              <input type="text" id="newRoomName" class="modal-input" placeholder="VD: Nhóm Dự Án Mobile" required />
+            </div>
+            <div style="flex: 1;">
+              <label for="newRoomCode">Mã nhóm (tùy chọn)</label>
+              <input type="text" id="newRoomCode" class="modal-input" placeholder="Tự tạo nếu trống" />
+            </div>
+          </div>
+          <button type="submit" class="btn-primary full-width">+ Tạo nhóm mới & Mở phòng chat</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
