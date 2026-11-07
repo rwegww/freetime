@@ -11,12 +11,12 @@ export const state = {
   currentWeekMonday: getMondayOfDate(new Date()),
   selectedFilterMemberIds: new Set(),
   paintMode: 'busy', // 'busy' | 'free' | 'inspect'
-  calendarScope: (typeof window !== 'undefined' && window.localStorage && localStorage.getItem('freetime_calendar_scope')) || 'personal', // 'personal' | 'team'
+  calendarScope: 'team', // Chỉ dùng 1 chế độ Lịch nhóm duy nhất
   selectedColor: '#6366f1',
   profileColor: '#6366f1',
   inspectedSlot: null,
   typingTimeout: null,
-  activeMobileTab: (typeof window !== 'undefined' && window.localStorage && localStorage.getItem('freetime_calendar_scope')) || 'personal', // 'personal' | 'team' | 'chat'
+  activeMobileTab: 'schedule', // 'schedule' | 'chat'
   unreadChatCount: 0,
   mobileDayFilter: 'all', // 'all' | 0..6
   mobileToolsOpen: false,
@@ -32,8 +32,19 @@ export function isDayIndexPast(dayIndex) {
 }
 
 export function getActiveMember() {
-  if (!state.room || !state.activeMemberId) return null;
-  return state.room.members.find(m => m.id === state.activeMemberId) || null;
+  if (!state.room) return null;
+  if (state.activeMemberId) {
+    const found = state.room.members.find(m => m.id === state.activeMemberId);
+    if (found) return found;
+  }
+  if (state.currentUser && state.currentUser.id) {
+    const foundByUserId = state.room.members.find(m => m.userId === state.currentUser.id);
+    if (foundByUserId) {
+      state.activeMemberId = foundByUserId.id;
+      return foundByUserId;
+    }
+  }
+  return null;
 }
 
 export function getWeekSchedules() {

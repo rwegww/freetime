@@ -326,16 +326,9 @@
       <div class="register-toolbar">
         <div class="toolbar-primary-row">
           <div class="toolbar-left">
-            <!-- Chuyển Lịch của tôi / Lịch nhóm (chỉ hiện trên máy tính; điện thoại dùng thanh dưới đáy) -->
-            <div class="calendar-scope-switcher" role="tablist" aria-label="Chọn lịch">
-              <button type="button" class="scope-pill active" id="btnScopePersonal" data-calendar-scope="personal" role="tab" aria-selected="true" title="Lịch riêng của bạn: chạm ô để đánh dấu giờ bận">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <span>Lịch của tôi</span>
-              </button>
-              <button type="button" class="scope-pill" id="btnScopeTeam" data-calendar-scope="team" role="tab" aria-selected="false" title="Bảng đăng ký lịch rảnh cả nhóm">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <span>Lịch nhóm</span>
-              </button>
+            <div class="calendar-header-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <span>Lịch nhóm</span>
             </div>
           </div>
 
@@ -409,13 +402,10 @@
         </div>
       </div>
 
-      <!-- Dòng hướng dẫn ngắn + chú thích màu -->
-      <div class="grid-legend-bar">
-        <span class="calendar-hint" id="calendarHint">👆 Chạm vào ô để đánh dấu <strong>bận</strong>, chạm lại để bỏ</span>
-        <div class="legend-items" id="legendItemsGroup">
-          <span class="legend-item"><i class="swatch swatch-my-busy"></i> Bận</span>
-          <span class="legend-item"><i class="swatch swatch-my-free"></i> Rảnh</span>
-        </div>
+      <!-- Dòng hướng dẫn ngắn & chú thích màu (ẩn hoàn toàn để giao diện bảng gọn gàng) -->
+      <div class="grid-legend-bar hidden" id="gridLegendBar" style="display: none !important;">
+        <span class="calendar-hint hidden" id="calendarHint"></span>
+        <div class="legend-items hidden" id="legendItemsGroup"></div>
       </div>
 
       <!-- Bộ chọn ngày nhanh cho điện thoại (chỉ hiện khi đang xem phóng to 1 ngày) -->
@@ -490,11 +480,7 @@
 
   <!-- Thanh điều hướng dưới cùng cho Mobile & Tablet dọc -->
   <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Chuyển màn hình">
-    <button type="button" id="btnTabPersonal" class="mobile-nav-item" data-tab="personal">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <span>Lịch của tôi</span>
-    </button>
-    <button type="button" id="btnTabSchedule" class="mobile-nav-item" data-tab="team">
+    <button type="button" id="btnTabSchedule" class="mobile-nav-item active" data-tab="schedule">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       <span>Lịch nhóm</span>
     </button>
@@ -920,6 +906,6 @@
   <div id="toastContainer" class="toast-container"></div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="/js/main.js"></script>
+  <script type="module" src="/js/main.js?v=20261107_v4"></script>
 </body>
 </html>

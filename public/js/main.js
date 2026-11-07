@@ -389,7 +389,7 @@ function scheduleAutoCloudTour() {
       userId: state.currentUser.id,
       force: false,
       onBeforeStart: () => {
-        showPersonalCalendar();
+        showTeamCalendar();
       }
     });
   }, 260);
@@ -587,29 +587,19 @@ function setPaintMode(mode) {
   if (table) table.dataset.paintMode = mode;
 }
 
-function showPersonalCalendar() {
-  state.calendarScope = 'personal';
-  try {
-    localStorage.setItem('freetime_calendar_scope', 'personal');
-  } catch (_) {}
+function showTeamCalendar() {
+  state.calendarScope = 'team';
   if (window.innerWidth <= 960) {
-    switchMobileTab('personal');
+    switchMobileTab('schedule');
   } else {
     renderUnifiedScheduleSection();
   }
 }
 
 function switchMobileTab(tab) {
-  if (tab === 'schedule') {
-    tab = state.calendarScope || 'personal';
-  }
+  if (tab !== 'chat') tab = 'schedule';
   state.activeMobileTab = tab;
-  if (tab === 'personal' || tab === 'team') {
-    state.calendarScope = tab;
-    try {
-      localStorage.setItem('freetime_calendar_scope', tab);
-    } catch (_) {}
-  }
+  state.calendarScope = 'team';
   document.body.dataset.mobileTab = tab;
   document.querySelectorAll('.mobile-nav-item[data-tab]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
@@ -1427,21 +1417,6 @@ function bindWorkspaceEvents() {
     btn.addEventListener('click', () => switchMobileTab(btn.dataset.tab));
   });
 
-  // Chuyển đổi phạm vi hiển thị: Lịch cá nhân vs Lịch nhóm
-  document.querySelectorAll('[data-calendar-scope]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const scope = btn.dataset.calendarScope;
-      state.calendarScope = scope;
-      try {
-        localStorage.setItem('freetime_calendar_scope', scope);
-      } catch (_) {}
-      if (window.innerWidth <= 960) {
-        switchMobileTab(scope);
-      } else {
-        renderUnifiedScheduleSection();
-      }
-    });
-  });
 
   document.querySelectorAll('.btn-preset[data-preset]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1516,7 +1491,7 @@ function bindWorkspaceEvents() {
         userId: state.currentUser ? state.currentUser.id : '',
         force: true,
         onBeforeStart: () => {
-          showPersonalCalendar();
+          showTeamCalendar();
         }
       });
     });

@@ -38,15 +38,14 @@ function buildSteps() {
     {
       getTarget: () => document.getElementById('calendarTableWrapper'),
       maxSpotHeight: 175,
-      title: 'Đánh dấu giờ bận',
-      text: 'Chạm vào ô lúc bạn BẬN (đi làm, đi học...). Chạm lại để bỏ. Lịch tự lưu.'
+      title: 'Bảng đăng ký lịch nhóm',
+      text: 'Chạm trực tiếp vào ô ở cột của bạn để tick chọn ca RẢNH (✓) hoặc BẬN (✕).'
     },
     {
-      getTarget: () =>
-        isMobile ? document.getElementById('btnTabSchedule') : document.getElementById('btnScopeTeam'),
+      getTarget: () => document.getElementById('btnToggleInsights'),
       maxSpotHeight: 64,
-      title: 'Xem giờ rảnh chung',
-      text: 'Mở Lịch nhóm để thấy lúc cả nhóm cùng rảnh (ô xanh lá). Chạm ô để xem ai rảnh.'
+      title: 'Xem gợi ý giờ rảnh',
+      text: 'Bấm đây để xem tổng số giờ rảnh và các khoảng thời gian cả nhóm cùng rảnh dài nhất.'
     },
     {
       getTarget: () => document.getElementById('btnCopyRoomLink'),
