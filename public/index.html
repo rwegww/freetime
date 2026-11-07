@@ -671,6 +671,11 @@
           <button type="button" class="btn-danger-outline" id="btnLogout">Đăng xuất</button>
         </div>
 
+        <button type="button" class="btn-ghost full-width" id="btnOpenGuideFromProfile" style="margin-top: 10px; justify-content: center; gap: 6px; font-weight: 700;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="#38bdf8" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+          📖 Xem hướng dẫn làm quen
+        </button>
+
         <form id="profileUpdateForm" class="add-member-form">
           <div class="form-row">
             <label for="profileNameInput">Tên hiển thị của bạn</label>
@@ -854,6 +859,83 @@
     </div>
   </div>
 
+  <!-- ==================== MODAL: HƯỚNG DẪN NGƯỜI MỚI LÀM QUEN ==================== -->
+  <div id="quickGuideModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-label="Hướng dẫn sử dụng FreeTime">
+    <div class="modal-card quick-guide-modal-card">
+      <div class="modal-sheet-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <div>
+          <span class="modal-tag">✨ Dành cho thành viên mới</span>
+          <h3>Hướng dẫn làm quen FreeTime</h3>
+        </div>
+        <button class="modal-close-btn" data-close="quickGuideModal" aria-label="Đóng">&times;</button>
+      </div>
+
+      <div class="modal-body quick-guide-modal-body">
+        <div class="guide-steps-list">
+          <!-- Bước 1: Cột của bạn -->
+          <div class="guide-step-card">
+            <div class="guide-step-num">1</div>
+            <div class="guide-step-content">
+              <h4>
+                <span class="guide-badge-me">● Bạn</span> Tìm cột màu vàng của bạn
+              </h4>
+              <p>Mỗi thành viên có 1 cột riêng. Cột của bạn luôn được <strong>tô màu vàng</strong> với tiêu đề <strong>Bạn</strong> để dễ dàng nhận biết.</p>
+            </div>
+          </div>
+
+          <!-- Bước 2: Đăng ký ca rảnh/bận -->
+          <div class="guide-step-card">
+            <div class="guide-step-num">2</div>
+            <div class="guide-step-content">
+              <h4>Chạm vào ô để đăng ký Rảnh / Bận</h4>
+              <p>Bảng chia 3 ca mỗi ngày: <strong>Sáng (7-12h)</strong>, <strong>Chiều (12-17h)</strong>, <strong>Tối (17-22h)</strong>.</p>
+              <div class="guide-status-pills">
+                <span class="guide-status-pill pill-free"><span class="pill-box">✓</span> Rảnh (sẵn sàng đi)</span>
+                <span class="guide-status-pill pill-busy"><span class="pill-box">✕</span> Bận (học / làm / bận việc)</span>
+              </div>
+              <p class="guide-tip-note">💡 Chạm trực tiếp vào ô ở cột <strong>Bạn</strong> để đổi trạng thái. Lịch tự động lưu và cập nhật ngay cho cả nhóm!</p>
+            </div>
+          </div>
+
+          <!-- Bước 3: Tìm lúc cùng rảnh & chốt hẹn -->
+          <div class="guide-step-card">
+            <div class="guide-step-num">3</div>
+            <div class="guide-step-content">
+              <h4>Xem giờ rảnh chung & Chốt hẹn</h4>
+              <p>Cột <strong>Cả nhóm</strong> bên phải tự động tính toán. Khi tất cả cùng rảnh một ca:</p>
+              <div class="guide-summary-demo">
+                <span class="guide-all-free-badge">✨ Cả nhóm rảnh</span>
+                <span class="btn-sheet-propose-demo">Chốt hẹn</span>
+              </div>
+              <p>Bấm nút <strong>Chốt hẹn</strong> để gửi ngay đề xuất cuộc hẹn vào phòng trò chuyện nhóm!</p>
+            </div>
+          </div>
+
+          <!-- Bước 4: Nhắn tin & Mời bạn bè -->
+          <div class="guide-step-card">
+            <div class="guide-step-num">4</div>
+            <div class="guide-step-content">
+              <h4>Nhắn tin & Mời thêm bạn bè</h4>
+              <ul class="guide-bullet-list">
+                <li>Bấm tab <strong>Nhắn tin</strong> ở dưới đáy (trên điện thoại) để trò chuyện và bình chọn giờ hẹn.</li>
+                <li>Bấm nút <strong>🔗 Chia sẻ</strong> ở góc trên đầu trang để gửi link mời qua Zalo / Messenger.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer quick-guide-footer">
+        <button type="button" class="btn-outline btn-start-interactive-tour" id="btnGuideStartInteractiveTour">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="#38bdf8" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+          Chỉ điểm trực tiếp (Tour)
+        </button>
+        <button type="button" class="btn-primary" data-close="quickGuideModal">Tôi đã hiểu, bắt đầu! 🚀</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== ĐÁM MÂY HƯỚNG DẪN LẦN ĐẦU (CLOUD COACHMARK TOUR) ==================== -->
   <div id="cloudTourLayer" class="cloud-tour-layer hidden" role="dialog" aria-modal="false" aria-label="Đám mây hướng dẫn người mới">
     <div id="cloudTourBackdrop" class="cloud-tour-backdrop"></div>
@@ -906,6 +988,6 @@
   <div id="toastContainer" class="toast-container"></div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="/js/main.js?v=20261107_v5"></script>
+  <script type="module" src="/js/main.js?v=20261107_v6"></script>
 </body>
 </html>

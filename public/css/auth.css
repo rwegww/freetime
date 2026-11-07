@@ -963,13 +963,217 @@ body[data-app-stage="workspace"] .onboarding-screen {
 
 @media (max-width: 640px) {
   .btn-cloud-help {
-    width: 32px;
+    width: auto;
     height: 32px;
-    padding: 0;
+    padding: 0 8px;
+    gap: 4px;
   }
   .btn-cloud-help .cloud-help-label {
-    display: none;
+    display: inline;
+    font-size: 11px;
+    font-weight: 700;
   }
+}
+
+/* ==================== QUICK ONBOARDING GUIDE MODAL ==================== */
+.quick-guide-modal-card {
+  max-width: 520px;
+  width: 95vw;
+}
+
+.quick-guide-modal-body {
+  padding: 16px 20px;
+  max-height: 72vh;
+  overflow-y: auto;
+}
+
+.guide-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.guide-step-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  transition: all 0.2s ease;
+}
+
+.guide-step-card:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.guide-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.35);
+}
+
+.guide-step-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.guide-step-content h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.guide-step-content p {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.guide-badge-me {
+  display: inline-flex;
+  align-items: center;
+  background: #fde047;
+  color: #854d0e;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #ca8a04;
+}
+
+.guide-status-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+  flex-wrap: wrap;
+}
+
+.guide-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.guide-status-pill.pill-free {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.guide-status-pill.pill-busy {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+.guide-status-pill .pill-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-weight: 800;
+}
+
+.guide-status-pill.pill-free .pill-box {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.guide-status-pill.pill-busy .pill-box {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.guide-summary-demo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.guide-all-free-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #dcfce7;
+  color: #15803d;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid #86efac;
+}
+
+.btn-sheet-propose-demo {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: #16a34a;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(22, 163, 74, 0.25);
+}
+
+.guide-tip-note {
+  font-size: 12px;
+  color: #0369a1;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  padding: 7px 11px;
+  border-radius: 8px;
+  margin-top: 8px;
+  line-height: 1.45;
+}
+
+.guide-bullet-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.quick-guide-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 20px;
+}
+
+.btn-start-interactive-tour {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
 }
 
 .cloud-tour-layer {

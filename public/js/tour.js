@@ -1,11 +1,35 @@
 const TOUR_STORAGE_PREFIX = 'freetime_cloud_tour_v1_';
 const ONBOARD_TIP_PREFIX = 'freetime_onboard_cloud_v1_';
+const QUICK_GUIDE_STORAGE_PREFIX = 'freetime_quick_guide_v1_';
 
 let activeSteps = [];
 let activeIndex = 0;
 let activeUserId = '';
 let isTourOpen = false;
 let boundOnce = false;
+
+export function hasSeenQuickGuide(userId) {
+  if (!userId) return false;
+  return localStorage.getItem(`${QUICK_GUIDE_STORAGE_PREFIX}${userId}`) === '1';
+}
+
+export function markQuickGuideSeen(userId) {
+  if (!userId) return;
+  localStorage.setItem(`${QUICK_GUIDE_STORAGE_PREFIX}${userId}`, '1');
+}
+
+export function openQuickGuideModal({ userId = '', auto = false } = {}) {
+  if (auto && userId && hasSeenQuickGuide(userId)) {
+    return false;
+  }
+  const modal = document.getElementById('quickGuideModal');
+  if (!modal) return false;
+  modal.classList.remove('hidden');
+  if (userId) {
+    markQuickGuideSeen(userId);
+  }
+  return true;
+}
 
 export function hasSeenCloudTour(userId) {
   if (!userId) return false;
@@ -36,16 +60,28 @@ function buildSteps() {
   const isMobile = window.innerWidth <= 960;
   return [
     {
-      getTarget: () => document.getElementById('calendarTableWrapper'),
-      maxSpotHeight: 175,
-      title: 'Bảng đăng ký lịch nhóm',
-      text: 'Chạm trực tiếp vào ô ở cột của bạn để tick chọn ca RẢNH (✓) hoặc BẬN (✕).'
+      getTarget: () =>
+        document.querySelector('th.team-sheet-th-member.is-me-header') ||
+        document.querySelector('td.clickable-me-cell') ||
+        document.getElementById('calendarTableWrapper'),
+      maxSpotHeight: 180,
+      title: 'Cột của bạn (● Bạn)',
+      text: 'Chạm trực tiếp vào ô ở cột này để tick chọn ca bạn RẢNH (✓) hoặc BẬN (✕). Lịch tự lưu tức thì.'
+    },
+    {
+      getTarget: () =>
+        document.querySelector('th.team-sheet-th-summary') ||
+        document.querySelector('td.team-sheet-td-summary') ||
+        document.getElementById('calendarTableWrapper'),
+      maxSpotHeight: 180,
+      title: 'Cột cả nhóm cùng rảnh',
+      text: 'Khi tất cả cùng rảnh, ô sẽ sáng đèn "✨ Cả nhóm rảnh" kèm nút "Chốt hẹn" để lên lịch ngay!'
     },
     {
       getTarget: () => document.getElementById('btnCopyRoomLink'),
       maxSpotHeight: 56,
-      title: 'Mời bạn bè',
-      text: 'Bấm đây để lấy link nhóm, gửi qua Zalo hoặc Messenger.'
+      title: 'Mời bạn bè vào nhóm',
+      text: 'Bấm nút Chia sẻ để lấy link gửi Zalo hoặc Messenger cho bạn bè tham gia.'
     },
     {
       getTarget: () =>
@@ -53,8 +89,8 @@ function buildSteps() {
           ? document.getElementById('btnTabChat')
           : document.getElementById('chatSectionCard'),
       maxSpotHeight: 210,
-      title: 'Nhắn tin & chốt lịch',
-      text: 'Trò chuyện với cả nhóm và bình chọn giờ hẹn tại đây.'
+      title: 'Nhắn tin & Chốt lịch',
+      text: 'Trò chuyện, nhận thông báo tin mới và cùng biểu quyết thời gian hẹn tại đây.'
     }
   ];
 }
@@ -195,6 +231,18 @@ export function initCloudTourEvents() {
 
   if (skipBtn) {
     skipBtn.addEventListener('click', () => stopCloudTour({ markSeen: true }));
+  }
+
+  const btnStartTour = document.getElementById('btnGuideStartInteractiveTour');
+  if (btnStartTour) {
+    btnStartTour.addEventListener('click', () => {
+      const modal = document.getElementById('quickGuideModal');
+      if (modal) modal.classList.add('hidden');
+      startCloudTour({
+        userId: activeUserId,
+        force: true
+      });
+    });
   }
 
   if (backdrop) {

@@ -78,7 +78,8 @@ import {
   startCloudTour,
   stopCloudTour,
   syncOnboardingCloudTip,
-  dismissOnboardingCloudTip
+  dismissOnboardingCloudTip,
+  openQuickGuideModal
 } from './tour.js';
 
 let authConfigCache = null;
@@ -385,14 +386,11 @@ function scheduleAutoCloudTour() {
   setTimeout(() => {
     const anyModalOpen = Boolean(document.querySelector('.modal-backdrop:not(.hidden)'));
     if (anyModalOpen || document.body.dataset.appStage !== 'workspace') return;
-    startCloudTour({
+    openQuickGuideModal({
       userId: state.currentUser.id,
-      force: false,
-      onBeforeStart: () => {
-        showTeamCalendar();
-      }
+      auto: true
     });
-  }, 260);
+  }, 400);
 }
 
 function enterLoadedGroup(room, member, onlineMemberIds = [], { deferAutoTour = false } = {}) {
@@ -1487,12 +1485,20 @@ function bindWorkspaceEvents() {
   const btnReplayCloudTour = document.getElementById('btnReplayCloudTour');
   if (btnReplayCloudTour) {
     btnReplayCloudTour.addEventListener('click', () => {
-      startCloudTour({
+      openQuickGuideModal({
         userId: state.currentUser ? state.currentUser.id : '',
-        force: true,
-        onBeforeStart: () => {
-          showTeamCalendar();
-        }
+        auto: false
+      });
+    });
+  }
+
+  const btnOpenGuideFromProfile = document.getElementById('btnOpenGuideFromProfile');
+  if (btnOpenGuideFromProfile) {
+    btnOpenGuideFromProfile.addEventListener('click', () => {
+      closeModal('memberModal');
+      openQuickGuideModal({
+        userId: state.currentUser ? state.currentUser.id : '',
+        auto: false
       });
     });
   }
