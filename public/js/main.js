@@ -389,7 +389,7 @@ function scheduleAutoCloudTour() {
       userId: state.currentUser.id,
       force: false,
       onBeforeStart: () => {
-        if (window.innerWidth <= 960) switchMobileTab('schedule');
+        showPersonalCalendar();
       }
     });
   }, 260);
@@ -585,6 +585,18 @@ function setPaintMode(mode) {
   });
   const table = document.getElementById('unifiedScheduleTable');
   if (table) table.dataset.paintMode = mode;
+}
+
+function showPersonalCalendar() {
+  state.calendarScope = 'personal';
+  try {
+    localStorage.setItem('freetime_calendar_scope', 'personal');
+  } catch (_) {}
+  if (window.innerWidth <= 960) {
+    switchMobileTab('personal');
+  } else {
+    renderUnifiedScheduleSection();
+  }
 }
 
 function switchMobileTab(tab) {
@@ -1516,7 +1528,7 @@ function bindWorkspaceEvents() {
         userId: state.currentUser ? state.currentUser.id : '',
         force: true,
         onBeforeStart: () => {
-          if (window.innerWidth <= 960) switchMobileTab('schedule');
+          showPersonalCalendar();
         }
       });
     });

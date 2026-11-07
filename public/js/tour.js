@@ -33,33 +33,41 @@ export function dismissOnboardingCloudTip(userId) {
 }
 
 function buildSteps() {
+  const isMobile = window.innerWidth <= 960;
   return [
     {
       getTarget: () => document.getElementById('calendarTableWrapper'),
       maxSpotHeight: 175,
-      title: 'Chấm chọn giờ bận',
-      text: 'Bấm vào từng ô giờ bạn BẬN. Ô màu xanh lá là lúc cả nhóm cùng rảnh!'
+      title: 'Đánh dấu giờ bận',
+      text: 'Chạm vào ô lúc bạn BẬN (đi làm, đi học...). Chạm lại để bỏ. Lịch tự lưu.'
     },
     {
       getTarget: () => document.getElementById('btnOpenBusyRangeModal'),
       maxSpotHeight: 64,
-      title: 'Nhập khoảng giờ bận',
-      text: 'Không cần chấm từng ô: bấm vào đây để nhập hẳn giờ bận cho 1 ngày hoặc nhiều ngày liên tiếp!'
+      title: 'Nhập nhanh nhiều ngày',
+      text: 'Bận nhiều ngày liền? Bấm đây để nhập giờ bận 1 lần cho cả khoảng ngày.'
+    },
+    {
+      getTarget: () =>
+        isMobile ? document.getElementById('btnTabSchedule') : document.getElementById('btnScopeTeam'),
+      maxSpotHeight: 64,
+      title: 'Xem giờ rảnh chung',
+      text: 'Mở Lịch nhóm để thấy lúc cả nhóm cùng rảnh (ô xanh lá). Chạm ô để xem ai rảnh.'
     },
     {
       getTarget: () => document.getElementById('btnCopyRoomLink'),
       maxSpotHeight: 56,
-      title: 'Chia sẻ link nhóm',
-      text: 'Bấm vào đây để lấy Link mời nhóm và gửi qua Zalo, Messenger cho bạn bè.'
+      title: 'Mời bạn bè',
+      text: 'Bấm đây để lấy link nhóm, gửi qua Zalo hoặc Messenger.'
     },
     {
       getTarget: () =>
-        window.innerWidth <= 960
+        isMobile
           ? document.getElementById('btnTabChat')
           : document.getElementById('chatSectionCard'),
       maxSpotHeight: 210,
       title: 'Nhắn tin & chốt lịch',
-      text: 'Trò chuyện chung với cả nhóm và bình chọn giờ hẹn ngay tại đây!'
+      text: 'Trò chuyện với cả nhóm và bình chọn giờ hẹn tại đây.'
     }
   ];
 }

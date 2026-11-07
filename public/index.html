@@ -322,60 +322,44 @@
   <main class="main-two-sections">
     <!-- ==================== PHẦN 1: ĐĂNG KÝ LỊCH LÀM VIỆC & SUY RA GIỜ TRỐNG ==================== -->
     <section class="section-schedule card" id="scheduleSectionCard">
-      <!-- Thanh chuyển đổi Trang Lịch cá nhân / Lịch nhóm -->
-      <div class="calendar-scope-bar">
-        <div class="calendar-scope-switcher" role="tablist" aria-label="Phạm vi hiển thị lịch">
-          <button type="button" class="scope-pill active" id="btnScopePersonal" data-calendar-scope="personal" role="tab" aria-selected="true" title="Chỉ hiển thị lịch bận & giờ trống của riêng bạn, không lẫn thông tin nhóm">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span>Lịch cá nhân</span>
-          </button>
-          <button type="button" class="scope-pill" id="btnScopeTeam" data-calendar-scope="team" role="tab" aria-selected="false" title="Xem tổng hợp lịch làm việc & giờ trống của tất cả thành viên trong nhóm">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            <span>Lịch nhóm</span>
-          </button>
-        </div>
-
-        <div class="scope-context-info" id="scopeContextInfo">
-          <span class="scope-context-badge" id="scopeContextBadge">👤 Lịch riêng của bạn</span>
-          <span class="scope-context-desc" id="scopeContextDesc">Chỉ hiển thị lịch bận &amp; giờ trống của bạn</span>
-        </div>
-      </div>
-
-      <!-- Thanh thao tác gọn trên đầu lịch -->
+      <!-- Thanh công cụ gọn: 1 hàng duy nhất phía trên lịch -->
       <div class="register-toolbar">
         <div class="toolbar-primary-row">
-          <div class="segmented" role="tablist" aria-label="Chế độ thao tác trên lịch">
-            <button id="btnModeBusy" class="mode-pill active" data-mode="busy" title="Nhấn vào ô để đánh dấu hoặc bỏ chọn giờ bận">
-              <span class="dot dot-busy"></span>
-              <span>Bận</span>
-            </button>
-            <button id="btnModeFree" class="mode-pill" data-mode="free" title="Nhấn vào ô để xóa giờ bận">
-              <span class="dot dot-free"></span>
-              <span>Xóa</span>
-            </button>
-            <button id="btnModeInspect" class="mode-pill" data-mode="inspect" title="Chạm vào ô bất kỳ để xem chi tiết & đề xuất giờ hẹn">
-              <span class="dot dot-inspect"></span>
-              <span class="mode-label-full">Chi tiết</span>
-              <span class="mode-label-short">Xem</span>
-            </button>
+          <div class="toolbar-left">
+            <!-- Chuyển Lịch của tôi / Lịch nhóm (chỉ hiện trên máy tính; điện thoại dùng thanh dưới đáy) -->
+            <div class="calendar-scope-switcher" role="tablist" aria-label="Chọn lịch">
+              <button type="button" class="scope-pill active" id="btnScopePersonal" data-calendar-scope="personal" role="tab" aria-selected="true" title="Lịch riêng của bạn: chạm ô để đánh dấu giờ bận">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>Lịch của tôi</span>
+              </button>
+              <button type="button" class="scope-pill" id="btnScopeTeam" data-calendar-scope="team" role="tab" aria-selected="false" title="Xem lúc nào cả nhóm cùng rảnh">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span>Lịch nhóm</span>
+              </button>
+            </div>
+
+            <!-- Chế độ xem: 3 ca (7-12, 12-5, 5-10h) hoặc từng giờ -->
+            <div class="grid-view-switcher" role="tablist" aria-label="Chế độ xem lịch">
+              <button type="button" class="view-pill active" id="btnViewShifts" data-calendar-view="shifts" role="tab" aria-selected="true" title="Chia ngày thành 3 ca: Sáng (7-12), Chiều (12-5), Tối (5-10h)">3 ca</button>
+              <button type="button" class="view-pill" id="btnViewHours" data-calendar-view="hours" role="tab" aria-selected="false" title="Xem chi tiết từng giờ (07:00 - 22:00)">Từng giờ</button>
+            </div>
           </div>
 
           <div class="toolbar-quick-actions">
-            <button type="button" id="btnOpenBusyRangeModal" class="btn-busy-range" title="Nhập hẳn khoảng giờ bận của 1 ngày hoặc nhiều ngày liên tiếp">
+            <button type="button" id="btnOpenBusyRangeModal" class="btn-busy-range" title="Nhập giờ bận cho 1 ngày hoặc nhiều ngày liên tiếp">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-              <span class="range-label-full">Nhập giờ bận</span>
-              <span class="range-label-short">Nhập bận</span>
+              <span>Nhập giờ bận</span>
             </button>
 
-            <button type="button" id="btnToggleInsights" class="btn-insights-toggle" aria-expanded="false" title="Xem gợi ý khung giờ cả nhóm cùng rảnh">
+            <button type="button" id="btnToggleInsights" class="btn-insights-toggle" aria-expanded="false" title="Gợi ý khung giờ cả nhóm cùng rảnh">
               <span class="dot dot-free"></span>
               <span id="statAllFreeHours">0h rảnh</span>
               <svg class="chev-sm" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
             </button>
 
-            <button type="button" id="btnToggleMobileTools" class="btn-mobile-tools" aria-expanded="false" title="Chọn ca nhanh, ghi chú & lọc thành viên">
+            <button type="button" id="btnToggleMobileTools" class="btn-mobile-tools" aria-expanded="false" title="Thêm: ca mẫu, ghi chú, lọc thành viên">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="18" r="2" fill="currentColor"/></svg>
-              <span class="tools-btn-label">Tùy chọn</span>
+              <span class="tools-btn-label">Thêm</span>
               <span class="filter-active-dot hidden" id="mobileFilterActiveDot"></span>
             </button>
           </div>
@@ -395,12 +379,11 @@
         <!-- Ngăn kéo 2: Ca mẫu nhanh, Ghi chú & Lọc thành viên -->
         <div class="toolbar-collapsible" id="toolbarCollapsible">
           <div class="preset-group">
-            <span class="toolbar-label">Nhanh T2–T6</span>
-            <button type="button" class="btn-preset" id="btnOpenBusyRangeFromDrawer" title="Nhập khoảng giờ bận cho 1 ngày hoặc nhiều ngày liên tiếp">📅 Chọn ngày &amp; giờ...</button>
-            <button class="btn-preset" data-preset="morning" title="7h-12h">Ca sáng (7-12h)</button>
-            <button class="btn-preset" data-preset="afternoon" title="12h-17h">Ca chiều (12-5h)</button>
-            <button class="btn-preset" data-preset="evening" title="17h-22h">Ca tối (5-10h)</button>
-            <button class="btn-preset" data-preset="office" title="7h-17h">Sáng + Chiều (7-17h)</button>
+            <span class="toolbar-label">Ca mẫu T2–T6</span>
+            <button class="btn-preset" data-preset="morning" title="7h-12h">Sáng (7-12)</button>
+            <button class="btn-preset" data-preset="afternoon" title="12h-17h">Chiều (12-5)</button>
+            <button class="btn-preset" data-preset="evening" title="17h-22h">Tối (5-10h)</button>
+            <button class="btn-preset" data-preset="office" title="7h-17h">Sáng + Chiều</button>
             <button class="btn-preset danger" data-preset="clear" title="Xóa toàn bộ lịch tuần này của bạn">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
               Xóa tuần
@@ -437,23 +420,13 @@
         </div>
       </div>
 
-      <!-- Chú thích & Bộ chuyển đổi chế độ xem: 3 Ca (7-12, 12-5, 5-10h) hoặc Từng giờ (15h) -->
+      <!-- Dòng hướng dẫn ngắn + chú thích màu -->
       <div class="grid-legend-bar">
-        <div class="grid-view-switcher" role="tablist" aria-label="Chế độ xem lịch">
-          <button type="button" class="view-pill active" id="btnViewShifts" data-calendar-view="shifts" role="tab" aria-selected="true" title="Chia ngày thành 3 ca: Sáng (7-12), Chiều (12-5), Tối (5-10h)">
-            <span class="view-pill-icon">⚡</span>
-            <span>3 Ca (7-12, 12-5, 5-10h)</span>
-          </button>
-          <button type="button" class="view-pill" id="btnViewHours" data-calendar-view="hours" role="tab" aria-selected="false" title="Xem chi tiết từng giờ (15 tiếng: 07:00 - 22:00)">
-            <span>Từng giờ (15h)</span>
-          </button>
-        </div>
-
+        <span class="calendar-hint" id="calendarHint">👆 Chạm vào ô để đánh dấu <strong>bận</strong>, chạm lại để bỏ</span>
         <div class="legend-items" id="legendItemsGroup">
-          <span class="legend-item"><i class="swatch swatch-my-busy"></i> Bạn bận</span>
-          <span class="legend-item"><i class="swatch swatch-my-free"></i> Bạn rảnh</span>
+          <span class="legend-item"><i class="swatch swatch-my-busy"></i> Bận</span>
+          <span class="legend-item"><i class="swatch swatch-my-free"></i> Rảnh</span>
         </div>
-        <span class="legend-hint" id="gridZoomHint">Chạm thứ để xem 1 ngày</span>
       </div>
 
       <!-- Bộ chọn ngày nhanh cho điện thoại (chỉ hiện khi đang xem phóng to 1 ngày) -->
@@ -531,12 +504,10 @@
     <button type="button" id="btnTabPersonal" class="mobile-nav-item" data-tab="personal">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       <span>Lịch của tôi</span>
-      <span class="mobile-nav-pill mobile-nav-pill-personal" id="mobileTabPersonalBadge">0h bận</span>
     </button>
     <button type="button" id="btnTabSchedule" class="mobile-nav-item" data-tab="team">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       <span>Lịch nhóm</span>
-      <span class="mobile-nav-pill" id="mobileTabFreeBadge">0 trống</span>
     </button>
     <button type="button" id="btnTabChat" class="mobile-nav-item" data-tab="chat">
       <div class="mobile-nav-icon-wrap">

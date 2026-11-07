@@ -225,29 +225,24 @@ export function renderUnifiedScheduleSection() {
     btnScopeTeam.setAttribute('aria-selected', String(!isPersonalScope));
   }
 
-  const scopeBadge = document.getElementById('scopeContextBadge');
-  const scopeDesc = document.getElementById('scopeContextDesc');
-  if (scopeBadge) {
-    scopeBadge.textContent = isPersonalScope ? '👤 Lịch của bạn' : '👥 Lịch tổng hợp nhóm';
-  }
-  if (scopeDesc) {
-    scopeDesc.textContent = isPersonalScope
-      ? 'Chỉ hiển thị lịch bận & giờ trống của riêng bạn'
-      : 'Tổng hợp lịch làm việc & tìm giờ rảnh chung cả nhóm';
+  const calendarHint = document.getElementById('calendarHint');
+  if (calendarHint) {
+    calendarHint.innerHTML = isPersonalScope
+      ? '👆 Chạm vào ô để đánh dấu <strong>bận</strong>, chạm lại để bỏ'
+      : '👆 Chạm vào ô để xem <strong>ai rảnh</strong> &amp; hẹn lịch';
   }
 
   const legendItemsGroup = document.getElementById('legendItemsGroup');
   if (legendItemsGroup) {
     if (isPersonalScope) {
       legendItemsGroup.innerHTML = `
-        <span class="legend-item"><i class="swatch swatch-my-busy"></i> Bạn bận</span>
-        <span class="legend-item"><i class="swatch swatch-my-free"></i> Bạn rảnh</span>
+        <span class="legend-item"><i class="swatch swatch-my-busy"></i> Bận</span>
+        <span class="legend-item"><i class="swatch swatch-my-free"></i> Rảnh</span>
       `;
     } else {
       legendItemsGroup.innerHTML = `
-        <span class="legend-item"><i class="swatch swatch-my-busy"></i> Bạn bận</span>
-        <span class="legend-item"><i class="swatch swatch-100"></i> Nhóm rảnh</span>
-        <span class="legend-item"><i class="swatch swatch-partial"></i> Rảnh 1 phần</span>
+        <span class="legend-item"><i class="swatch swatch-100"></i> Cả nhóm rảnh</span>
+        <span class="legend-item"><i class="swatch swatch-partial"></i> Một số rảnh</span>
       `;
     }
   }
@@ -394,25 +389,15 @@ export function renderUnifiedScheduleSection() {
 
           let statusHtml = '';
           if (isMyBusy) {
-            const frac = !isMyFullyBusy ? `<small class="shift-frac">(${myBusyEntries.length}/5h)</small>` : '';
-            statusHtml = `<span class="shift-cell-label shift-label-busy">📌 ${escapeHtml(myBusyNote)}${frac}</span>`;
-          } else if (isPast) {
-            statusHtml = `<span class="shift-cell-label shift-label-past">Đã qua</span>`;
-          } else {
-            statusHtml = `<span class="shift-cell-label shift-label-my-free">✨ Rảnh</span>`;
+            const frac = !isMyFullyBusy ? ` <small class="shift-frac">${myBusyEntries.length}/5h</small>` : '';
+            statusHtml = `<span class="shift-cell-label shift-label-busy">${escapeHtml(myBusyNote)}${frac}</span>`;
+          } else if (!isPast) {
+            statusHtml = `<span class="shift-cell-label shift-label-my-free">Rảnh</span>`;
           }
 
           td.innerHTML = `
             <div class="shift-cell-inner">
-              <div class="shift-cell-header">
-                <span class="shift-cell-tag">${shift.badgeText}</span>
-              </div>
-              <div class="shift-cell-main">
-                ${statusHtml}
-              </div>
-              <div class="shift-cell-footer">
-                <span class="shift-personal-status">${isMyBusy ? 'Đã xếp bận' : 'Rảnh'}</span>
-              </div>
+              <div class="shift-cell-main">${statusHtml}</div>
             </div>
           `;
         } else {
@@ -451,16 +436,15 @@ export function renderUnifiedScheduleSection() {
 
           let statusHtml = '';
           if (isMyBusy) {
-            const frac = !isMyFullyBusy ? `<small class="shift-frac">(${myBusyEntries.length}/5h)</small>` : '';
-            statusHtml = `<span class="shift-cell-label shift-label-busy">📌 ${escapeHtml(myBusyNote)}${frac}</span>`;
+            statusHtml = `<span class="shift-cell-label shift-label-busy">Bạn bận</span>`;
           } else if (isPast) {
-            statusHtml = `<span class="shift-cell-label shift-label-past">Đã qua</span>`;
+            statusHtml = '';
           } else if (isAllFree) {
-            statusHtml = `<span class="shift-cell-label shift-label-free">✨ Nhóm rảnh</span>`;
+            statusHtml = `<span class="shift-cell-label shift-label-free">Cả nhóm rảnh</span>`;
           } else if (info.freeCount > 0) {
-            statusHtml = `<span class="shift-cell-label shift-label-partial">⚡ Trống ${info.freeCount}/${info.total}</span>`;
+            statusHtml = `<span class="shift-cell-label shift-label-partial">${info.freeCount}/${info.total} rảnh</span>`;
           } else {
-            statusHtml = `<span class="shift-cell-label shift-label-none">Bận cả nhóm</span>`;
+            statusHtml = `<span class="shift-cell-label shift-label-none">Không ai rảnh</span>`;
           }
 
           const freeAvatarsHtml = !isPast && !isMyBusy && !isAllFree && info.freeMembers.length > 0
@@ -472,17 +456,8 @@ export function renderUnifiedScheduleSection() {
 
           td.innerHTML = `
             <div class="shift-cell-inner">
-              <div class="shift-cell-header">
-                <span class="shift-cell-tag">${shift.badgeText}</span>
-                <span class="shift-cell-ratio">${info.freeCount}/${info.total}</span>
-              </div>
-              <div class="shift-cell-main">
-                ${statusHtml}
-              </div>
-              <div class="shift-cell-footer">
-                <div class="shift-cell-avatars">${freeAvatarsHtml}</div>
-                <button type="button" class="btn-cell-inspect" title="Xem chi tiết ca ${shift.name} (${shift.rangeLabel})">i</button>
-              </div>
+              <div class="shift-cell-main">${statusHtml}</div>
+              ${freeAvatarsHtml ? `<div class="shift-cell-avatars">${freeAvatarsHtml}</div>` : ''}
             </div>
           `;
         }
@@ -630,7 +605,6 @@ export function renderUnifiedScheduleSection() {
               <span class="cell-right">
                 <span class="cell-avatars">${freeAvatarsHtml}</span>
                 <span class="cell-ratio">${info.freeCount}/${info.total}</span>
-                <button type="button" class="btn-cell-inspect" title="Xem chi tiết ai rảnh / ai bận & đề xuất lịch hẹn">i</button>
               </span>
             </div>
           `;
@@ -674,80 +648,55 @@ export function renderUnifiedScheduleSection() {
   }
 }
 
-function bindSlotCellInteractions(td, d, h) {
-  let longPressTimer = null;
-  let longPressTriggered = false;
+/**
+ * Gắn thao tác chạm cho 1 ô lịch (đơn giản, không cần chọn chế độ trước):
+ * - Lịch của tôi: chạm = bật/tắt giờ bận.
+ * - Lịch nhóm: chạm = xem ai rảnh / ai bận & đề xuất giờ hẹn.
+ * Bỏ qua cú chạm nếu người dùng đang vuốt để cuộn lịch.
+ */
+function bindCellTap(td, d, { onInspect, onToggle }) {
   let pointerMoved = false;
   let startX = 0;
   let startY = 0;
 
-  const clearLongPress = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-    }
-  };
-
-  const inspectBtn = td.querySelector('.btn-cell-inspect');
-  inspectBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
-  inspectBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    openSlotInspector(d, h);
-  });
-
   td.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.btn-cell-inspect')) return;
     if (e.button !== undefined && e.button !== 0) return;
-
     pointerMoved = false;
-    longPressTriggered = false;
     startX = e.clientX;
     startY = e.clientY;
-    clearLongPress();
-
-    if (e.pointerType !== 'mouse') {
-      // Touch / Pen: giữ 430ms để xem chi tiết khung giờ
-      longPressTimer = setTimeout(() => {
-        longPressTriggered = true;
-        if (navigator.vibrate) navigator.vibrate(12);
-        openSlotInspector(d, h);
-      }, 430);
-    }
   });
 
   td.addEventListener('pointermove', (e) => {
     if (Math.hypot(e.clientX - startX, e.clientY - startY) > 10) {
       pointerMoved = true;
-      clearLongPress();
     }
   });
 
-  td.addEventListener('pointerup', clearLongPress);
-  td.addEventListener('pointercancel', clearLongPress);
-
-  td.addEventListener('click', (e) => {
-    if (e.target.closest('.btn-cell-inspect')) return;
-    if (longPressTriggered) {
-      longPressTriggered = false;
-      return;
-    }
+  td.addEventListener('click', () => {
     if (pointerMoved) {
       pointerMoved = false;
       return;
     }
-    if (state.paintMode === 'inspect') {
-      openSlotInspector(d, h);
+    if ((state.calendarScope || 'personal') === 'team') {
+      onInspect();
       return;
     }
     if (isDayIndexPast(d)) {
-      showToast('🔒 Không thể đăng ký hoặc chỉnh sửa lịch của ngày đã qua.');
+      showToast('🔒 Ngày đã qua, không sửa lịch được nữa.');
       return;
     }
     if (!state.activeMemberId) {
       openModal('memberModal');
       return;
     }
-    applyPersonalSlotPaint(d, h);
+    onToggle();
+  });
+}
+
+function bindSlotCellInteractions(td, d, h) {
+  bindCellTap(td, d, {
+    onInspect: () => openSlotInspector(d, h),
+    onToggle: () => applyPersonalSlotPaint(d, h)
   });
 }
 
@@ -788,80 +737,9 @@ export function applyPersonalShiftPaint(dayIndex, shift) {
 }
 
 function bindShiftCellInteractions(td, d, shift) {
-  let longPressTimer = null;
-  let longPressTriggered = false;
-  let pointerMoved = false;
-  let startX = 0;
-  let startY = 0;
-
-  const clearLongPress = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-    }
-  };
-
-  const inspectBtn = td.querySelector('.btn-cell-inspect');
-  if (inspectBtn) {
-    inspectBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
-    inspectBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openSlotInspector(d, shift.startHour, shift.endHour);
-    });
-  }
-
-  td.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.btn-cell-inspect')) return;
-    if (e.button !== undefined && e.button !== 0) return;
-
-    pointerMoved = false;
-    longPressTriggered = false;
-    startX = e.clientX;
-    startY = e.clientY;
-    clearLongPress();
-
-    if (e.pointerType !== 'mouse') {
-      longPressTimer = setTimeout(() => {
-        longPressTriggered = true;
-        if (navigator.vibrate) navigator.vibrate(12);
-        openSlotInspector(d, shift.startHour, shift.endHour);
-      }, 430);
-    }
-  });
-
-  td.addEventListener('pointermove', (e) => {
-    if (Math.hypot(e.clientX - startX, e.clientY - startY) > 10) {
-      pointerMoved = true;
-      clearLongPress();
-    }
-  });
-
-  td.addEventListener('pointerup', clearLongPress);
-  td.addEventListener('pointercancel', clearLongPress);
-
-  td.addEventListener('click', (e) => {
-    if (e.target.closest('.btn-cell-inspect')) return;
-    if (longPressTriggered) {
-      longPressTriggered = false;
-      return;
-    }
-    if (pointerMoved) {
-      pointerMoved = false;
-      return;
-    }
-    if (state.paintMode === 'inspect') {
-      openSlotInspector(d, shift.startHour, shift.endHour);
-      return;
-    }
-    if (isDayIndexPast(d)) {
-      showToast('🔒 Không thể đăng ký hoặc chỉnh sửa lịch của ngày đã qua.');
-      return;
-    }
-    if (!state.activeMemberId) {
-      openModal('memberModal');
-      return;
-    }
-    applyPersonalShiftPaint(d, shift);
+  bindCellTap(td, d, {
+    onInspect: () => openSlotInspector(d, shift.startHour, shift.endHour),
+    onToggle: () => applyPersonalShiftPaint(d, shift)
   });
 }
 
