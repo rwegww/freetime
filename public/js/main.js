@@ -25,8 +25,14 @@ import {
 import {
   getSavedToken,
   saveToken,
+  isRememberMePreferred,
+  saveRememberedAccount,
+  getRememberedAccount,
+  clearRememberedAccount,
+  fetchAuthConfig,
   registerAccount,
   loginAccount,
+  loginWithGoogle,
   fetchCurrentUser,
   updateMyProfile,
   fetchMyGroups,
@@ -62,13 +68,59 @@ import {
   dismissOnboardingCloudTip
 } from './tour.js';
 
+let authConfigCache = null;
+let googleScriptPromise = null;
+
 document.addEventListener('DOMContentLoaded', () => {
   bootstrapApp();
 });
 
+async function preloadAuthConfig() {
+  try {
+    authConfigCache = await fetchAuthConfig();
+    if (authConfigCache && authConfigCache.googleClientId) {
+      loadGoogleGisScript().catch(() => {});
+    }
+  } catch (_) {}
+  return authConfigCache;
+}
+
+function loadGoogleGisScript() {
+  if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+    return Promise.resolve();
+  }
+  if (googleScriptPromise) return googleScriptPromise;
+  googleScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      googleScriptPromise = null;
+      reject(new Error('Không thể tải thư viện đăng nhập Google.'));
+    };
+    document.head.appendChild(script);
+  });
+  return googleScriptPromise;
+}
+
+async function completeAuthSuccess(data, rememberMe = true, welcomeToast = '') {
+  saveToken(data.token, { rememberMe });
+  if (rememberMe !== false) {
+    saveRememberedAccount(data.user);
+  } else {
+    clearRememberedAccount();
+  }
+  authenticateSocket(data.token);
+  await handlePostAuth(data.user, data.rooms);
+  if (welcomeToast) showToast(welcomeToast);
+}
+
 async function bootstrapApp() {
   const params = new URLSearchParams(window.location.search);
-  const urlRoom = params.get('room');
+  const urlRoom = params.get('room') || localStorage.getItem('freetime_pending_oauth_room') || '';
+  localStorage.removeItem('freetime_pending_oauth_room');
   if (urlRoom && urlRoom.trim()) {
     state.pendingInviteCode = extractInviteCode(urlRoom);
   }
@@ -79,20 +131,52 @@ async function bootstrapApp() {
   initCloudTourEvents();
   initSocketListeners();
 
+  // Handle Supabase Google OAuth redirect callback (#access_token=...)
+  if (window.location.hash && window.location.hash.includes('access_token=')) {
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const supaAccessToken = hashParams.get('access_token');
+    window.history.replaceState({}, '', window.location.pathname + window.location.search);
+    if (supaAccessToken) {
+      const rememberOAuth = localStorage.getItem('freetime_oauth_remember') !== '0';
+      try {
+        const data = await loginWithGoogle({
+          supabaseAccessToken: supaAccessToken,
+          rememberMe: rememberOAuth
+        });
+        await completeAuthSuccess(
+          data,
+          rememberOAuth,
+          `👋 Xin chào ${data.user.name}!`
+        );
+        return;
+      } catch (err) {
+        setAppStage('auth');
+        showAuthError(err.message);
+        return;
+      }
+    }
+  }
+
   const savedToken = getSavedToken();
   if (!savedToken) {
     setAppStage('auth');
+    preloadAuthConfig();
     return;
   }
 
   authenticateSocket(savedToken);
   try {
     const data = await fetchCurrentUser();
+    if (isRememberMePreferred() && data.token) {
+      saveToken(data.token, { rememberMe: true });
+      saveRememberedAccount(data.user);
+    }
     await handlePostAuth(data.user, data.rooms);
   } catch (err) {
     saveToken('');
     authenticateSocket('');
     setAppStage('auth');
+    preloadAuthConfig();
   }
 }
 
@@ -105,9 +189,47 @@ function setAppStage(stage) {
 
   if (stage === 'auth') {
     renderAuthInviteBanner();
+    renderSavedAccountCard();
   } else if (stage === 'onboarding') {
     renderOnboardingHeader();
   }
+}
+
+function renderSavedAccountCard() {
+  const card = document.getElementById('savedAccountCard');
+  const avatarEl = document.getElementById('savedAccountAvatar');
+  const nameEl = document.getElementById('savedAccountName');
+  const userEl = document.getElementById('savedAccountUsername');
+  const loginUserEl = document.getElementById('loginUsername');
+  const loginRemEl = document.getElementById('loginRememberMe');
+  const regRemEl = document.getElementById('regRememberMe');
+
+  const preferRemember = isRememberMePreferred();
+  if (loginRemEl) loginRemEl.checked = preferRemember;
+  if (regRemEl) regRemEl.checked = preferRemember;
+
+  if (!card) return;
+  const saved = getRememberedAccount();
+  if (!saved) {
+    card.classList.add('hidden');
+    return;
+  }
+
+  if (avatarEl) {
+    avatarEl.textContent = saved.avatar || 'TV';
+    avatarEl.style.backgroundColor = saved.color || '#6366f1';
+  }
+  if (nameEl) nameEl.textContent = saved.name || saved.username;
+  if (userEl) {
+    userEl.textContent =
+      saved.authProvider === 'google'
+        ? `Google • ${saved.username}`
+        : `@${saved.username}`;
+  }
+  if (loginUserEl && !loginUserEl.value && saved.authProvider !== 'google') {
+    loginUserEl.value = saved.username;
+  }
+  card.classList.remove('hidden');
 }
 
 function renderAuthInviteBanner() {
@@ -303,7 +425,7 @@ function renderHeader() {
     avatarEl.textContent = me.avatar || 'TV';
     avatarEl.style.backgroundColor = me.color || '#6366f1';
     nameEl.textContent = me.name;
-    roleEl.textContent = `${me.role || 'Thành viên'} • Tài khoản`;
+    roleEl.textContent = state.currentUser ? `@${state.currentUser.username}` : 'Tài khoản';
     if (toolbarMemberEl) toolbarMemberEl.textContent = me.name;
   }
 }
@@ -315,7 +437,6 @@ function renderMemberModalList() {
     const profileName = document.getElementById('modalProfileName');
     const profileUsername = document.getElementById('accountUsernameDisplay');
     const nameInput = document.getElementById('profileNameInput');
-    const roleInput = document.getElementById('profileRoleInput');
 
     if (profileAvatar) {
       profileAvatar.textContent = user.avatar || 'TV';
@@ -324,12 +445,6 @@ function renderMemberModalList() {
     if (profileName) profileName.textContent = user.name;
     if (profileUsername) profileUsername.textContent = `@${user.username}`;
     if (nameInput && document.activeElement !== nameInput) nameInput.value = user.name || '';
-    if (roleInput && document.activeElement !== roleInput) roleInput.value = user.role || '';
-
-    state.profileColor = user.color || state.profileColor || '#6366f1';
-    document.querySelectorAll('#memberColorPicker .color-swatch').forEach(sw => {
-      sw.classList.toggle('selected', sw.dataset.color === state.profileColor);
-    });
   }
 
   const grid = document.getElementById('existingMembersSelectGrid');
@@ -353,7 +468,7 @@ function renderMemberModalList() {
         </strong>
         <small style="color:#64748b;font-size:11px;display:flex;align-items:center;gap:5px;">
           <span class="status-dot ${isOnline ? 'online' : ''}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${isOnline ? '#10b981' : '#cbd5e1'}"></span>
-          ${escapeHtml(m.role || 'Thành viên')}
+          ${isOnline ? 'Đang online' : 'Thành viên nhóm'}
         </small>
       </div>
     `;
@@ -566,6 +681,89 @@ function normalizeFriendlyUsernameInput(rawValue) {
   return slugifyUsernameSuggestion(trimmed) || trimmed;
 }
 
+function getActiveRememberMeChoice() {
+  const isRegister = !document.getElementById('registerForm').classList.contains('hidden');
+  const checkbox = document.getElementById(isRegister ? 'regRememberMe' : 'loginRememberMe');
+  return checkbox ? Boolean(checkbox.checked) : true;
+}
+
+async function triggerGoogleSignIn(loginHint = '') {
+  showAuthError('');
+  const googleBtn = document.getElementById('btnGoogleAuth');
+  const googleLabel = document.getElementById('btnGoogleAuthLabel');
+  const rememberMe = getActiveRememberMeChoice();
+
+  if (googleBtn) googleBtn.disabled = true;
+  if (googleLabel) googleLabel.textContent = 'Đang kết nối Google...';
+
+  try {
+    const cfg = authConfigCache || (await fetchAuthConfig());
+    authConfigCache = cfg;
+
+    // Path 1: Google Identity Services OAuth2 Popup (GOOGLE_CLIENT_ID)
+    if (cfg && cfg.googleClientId) {
+      await loadGoogleGisScript();
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: cfg.googleClientId,
+        scope: 'openid email profile',
+        prompt: 'select_account',
+        hint: loginHint || undefined,
+        callback: async (tokenResp) => {
+          if (!tokenResp || tokenResp.error || !tokenResp.access_token) {
+            if (googleBtn) googleBtn.disabled = false;
+            if (googleLabel) googleLabel.textContent = 'Tiếp tục với Google';
+            return;
+          }
+          try {
+            const data = await loginWithGoogle({
+              accessToken: tokenResp.access_token,
+              rememberMe
+            });
+            await completeAuthSuccess(
+              data,
+              rememberMe,
+              `👋 Xin chào ${data.user.name}!`
+            );
+          } catch (err) {
+            showAuthError(err.message);
+          } finally {
+            if (googleBtn) googleBtn.disabled = false;
+            if (googleLabel) googleLabel.textContent = 'Tiếp tục với Google';
+          }
+        },
+        error_callback: () => {
+          if (googleBtn) googleBtn.disabled = false;
+          if (googleLabel) googleLabel.textContent = 'Tiếp tục với Google';
+        }
+      });
+
+      tokenClient.requestAccessToken();
+      return;
+    }
+
+    // Path 2: Supabase Google OAuth Redirect
+    if (cfg && cfg.supabaseGoogleEnabled && cfg.supabaseUrl) {
+      localStorage.setItem('freetime_oauth_remember', rememberMe ? '1' : '0');
+      if (state.pendingInviteCode) {
+        localStorage.setItem('freetime_pending_oauth_room', state.pendingInviteCode);
+      }
+      const redirectTo = `${window.location.origin}${window.location.pathname}`;
+      window.location.href = `${cfg.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
+      return;
+    }
+
+    // Path 3: Guide user to turn on Google OAuth in 1 minute
+    const originEl = document.getElementById('googleOriginDisplay');
+    if (originEl) originEl.textContent = window.location.origin;
+    openModal('googleSetupModal');
+  } catch (err) {
+    showAuthError(err.message);
+  } finally {
+    if (googleBtn) googleBtn.disabled = false;
+    if (googleLabel) googleLabel.textContent = 'Tiếp tục với Google';
+  }
+}
+
 function bindAuthEvents() {
   document.getElementById('tabAuthLogin').addEventListener('click', () => switchAuthTab('login'));
   document.getElementById('tabAuthRegister').addEventListener('click', () => switchAuthTab('register'));
@@ -574,6 +772,66 @@ function bindAuthEvents() {
   if (btnSwitchReg) btnSwitchReg.addEventListener('click', () => switchAuthTab('register'));
   const btnSwitchLogin = document.getElementById('btnSwitchToLogin');
   if (btnSwitchLogin) btnSwitchLogin.addEventListener('click', () => switchAuthTab('login'));
+
+  // Sync Remember-Me checkboxes between Login & Register tabs
+  const loginRemEl = document.getElementById('loginRememberMe');
+  const regRemEl = document.getElementById('regRememberMe');
+  if (loginRemEl && regRemEl) {
+    loginRemEl.addEventListener('change', () => {
+      regRemEl.checked = loginRemEl.checked;
+    });
+    regRemEl.addEventListener('change', () => {
+      loginRemEl.checked = regRemEl.checked;
+    });
+  }
+
+  // Google Sign-In button + Setup Modal copy button
+  const btnGoogleAuth = document.getElementById('btnGoogleAuth');
+  if (btnGoogleAuth) {
+    btnGoogleAuth.addEventListener('click', () => {
+      const saved = getRememberedAccount();
+      const hint = saved && saved.authProvider === 'google' ? saved.username : '';
+      triggerGoogleSignIn(hint);
+    });
+  }
+
+  const btnCopyGoogleOrigin = document.getElementById('btnCopyGoogleOrigin');
+  if (btnCopyGoogleOrigin) {
+    btnCopyGoogleOrigin.addEventListener('click', () => {
+      copyTextSafe(window.location.origin)
+        .then(() => showToast('📋 Đã sao chép URL trang web!'))
+        .catch(() => showToast('⚠️ Không thể sao chép tự động.'));
+    });
+  }
+
+  // Saved Account Quick Card actions
+  const btnUseSaved = document.getElementById('btnUseSavedAccount');
+  if (btnUseSaved) {
+    btnUseSaved.addEventListener('click', () => {
+      const saved = getRememberedAccount();
+      if (!saved) return;
+      switchAuthTab('login');
+      if (saved.authProvider === 'google') {
+        triggerGoogleSignIn(saved.username);
+        return;
+      }
+      const loginUserEl = document.getElementById('loginUsername');
+      const loginPwEl = document.getElementById('loginPassword');
+      if (loginUserEl) loginUserEl.value = saved.username;
+      if (loginPwEl) loginPwEl.focus();
+    });
+  }
+
+  const btnForgetSaved = document.getElementById('btnForgetSavedAccount');
+  if (btnForgetSaved) {
+    btnForgetSaved.addEventListener('click', () => {
+      clearRememberedAccount();
+      const loginUserEl = document.getElementById('loginUsername');
+      if (loginUserEl) loginUserEl.value = '';
+      renderSavedAccountCard();
+      showToast('Đã xóa tài khoản ghi nhớ.');
+    });
+  }
 
   const regNameInput = document.getElementById('regName');
   const regUserInput = document.getElementById('regUsername');
@@ -587,7 +845,7 @@ function bindAuthEvents() {
     if (rawUser && !/^[a-z0-9._@-]+$/i.test(rawUser)) {
       const fixed = slugifyUsernameSuggestion(rawUser) || slugifyUsernameSuggestion(rawName);
       if (fixed.length >= 3) {
-        regHelperEl.innerHTML = `<button type="button" class="btn-username-suggest warn-fix" data-apply-username="${escapeHtml(fixed)}">👆 Tên đăng nhập viết liền không dấu — Bấm vào đây để đổi thành: <strong>${escapeHtml(fixed)}</strong></button>`;
+        regHelperEl.innerHTML = `<button type="button" class="btn-username-suggest warn-fix" data-apply-username="${escapeHtml(fixed)}">👆 Viết liền không dấu — Bấm để đổi thành: <strong>${escapeHtml(fixed)}</strong></button>`;
         regHelperEl.classList.remove('hidden');
         return;
       }
@@ -596,7 +854,7 @@ function bindAuthEvents() {
     if (!rawUser) {
       const suggested = slugifyUsernameSuggestion(rawName);
       if (suggested.length >= 3) {
-        regHelperEl.innerHTML = `<button type="button" class="btn-username-suggest" data-apply-username="${escapeHtml(suggested)}">💡 Gợi ý dễ nhớ: <strong>${escapeHtml(suggested)}</strong> — Bấm vào đây để dùng luôn</button>`;
+        regHelperEl.innerHTML = `<button type="button" class="btn-username-suggest" data-apply-username="${escapeHtml(suggested)}">💡 Gợi ý tên đăng nhập: <strong>${escapeHtml(suggested)}</strong> — Bấm để chọn</button>`;
         regHelperEl.classList.remove('hidden');
         return;
       }
@@ -629,19 +887,12 @@ function bindAuthEvents() {
     });
   });
 
-  document.querySelectorAll('#regColorPicker .color-swatch').forEach(sw => {
-    sw.addEventListener('click', () => {
-      document.querySelectorAll('#regColorPicker .color-swatch').forEach(s => s.classList.remove('selected'));
-      sw.classList.add('selected');
-      state.selectedColor = sw.dataset.color;
-    });
-  });
-
   document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     showAuthError('');
     const username = normalizeFriendlyUsernameInput(document.getElementById('loginUsername').value);
     const password = document.getElementById('loginPassword').value;
+    const rememberMe = loginRemEl ? loginRemEl.checked : true;
     const submitBtn = document.getElementById('btnLoginSubmit');
 
     submitBtn.disabled = true;
@@ -649,12 +900,13 @@ function bindAuthEvents() {
     submitBtn.textContent = 'Đang đăng nhập...';
 
     try {
-      const data = await loginAccount({ username, password });
-      saveToken(data.token);
-      authenticateSocket(data.token);
+      const data = await loginAccount({ username, password, rememberMe });
       document.getElementById('loginPassword').value = '';
-      await handlePostAuth(data.user, data.rooms);
-      showToast(`👋 Chào mừng trở lại, ${data.user.name}!`);
+      await completeAuthSuccess(
+        data,
+        rememberMe,
+        `👋 Chào mừng trở lại, ${data.user.name}!`
+      );
     } catch (err) {
       showAuthError(err.message);
     } finally {
@@ -668,8 +920,8 @@ function bindAuthEvents() {
     showAuthError('');
     const name = document.getElementById('regName').value.trim();
     const username = normalizeFriendlyUsernameInput(document.getElementById('regUsername').value);
-    const role = document.getElementById('regRole').value.trim() || 'Thành viên';
     const password = document.getElementById('regPassword').value;
+    const rememberMe = regRemEl ? regRemEl.checked : true;
     const submitBtn = document.getElementById('btnRegisterSubmit');
 
     submitBtn.disabled = true;
@@ -681,18 +933,19 @@ function bindAuthEvents() {
         name,
         username,
         password,
-        role,
-        color: state.selectedColor
+        rememberMe
       });
-      saveToken(data.token);
-      authenticateSocket(data.token);
       document.getElementById('registerForm').reset();
+      if (regRemEl) regRemEl.checked = rememberMe;
       if (regHelperEl) {
         regHelperEl.innerHTML = '';
         regHelperEl.classList.add('hidden');
       }
-      await handlePostAuth(data.user, data.rooms);
-      showToast(`🎉 Đăng ký thành công! Xin chào ${data.user.name}.`);
+      await completeAuthSuccess(
+        data,
+        rememberMe,
+        `🎉 Đăng ký thành công! Xin chào ${data.user.name}.`
+      );
     } catch (err) {
       showAuthError(err.message);
     } finally {
@@ -1129,35 +1382,25 @@ function bindWorkspaceEvents() {
     });
   });
 
-  document.querySelectorAll('#memberColorPicker .color-swatch').forEach(sw => {
-    sw.addEventListener('click', () => {
-      document.querySelectorAll('#memberColorPicker .color-swatch').forEach(s => s.classList.remove('selected'));
-      sw.classList.add('selected');
-      state.profileColor = sw.dataset.color;
-    });
-  });
-
   document.getElementById('btnLogout').addEventListener('click', performLogout);
 
   document.getElementById('profileUpdateForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById('profileNameInput').value.trim();
-    const role = document.getElementById('profileRoleInput').value.trim() || 'Thành viên';
     if (!name) return;
 
     try {
-      const data = await updateMyProfile({
-        name,
-        role,
-        color: state.profileColor
-      });
+      const data = await updateMyProfile({ name });
       state.currentUser = data.user;
+      if (isRememberMePreferred()) {
+        saveRememberedAccount(data.user);
+      }
       state.myRooms = data.rooms || state.myRooms;
       if (state.roomCode) {
         await openGroupWorkspace(state.roomCode);
       }
       closeModal('memberModal');
-      showToast('✅ Đã cập nhật hồ sơ cá nhân!');
+      showToast('✅ Đã cập nhật tên hiển thị!');
     } catch (err) {
       showToast('⚠️ ' + err.message);
     }

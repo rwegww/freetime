@@ -39,7 +39,10 @@ const config = {
     publishableKey: isTestEnv ? '' : (process.env.SUPABASE_PUBLISHABLE_KEY || ''),
     secretKey: isTestEnv ? '' : (process.env.SUPABASE_SECRET_KEY || ''),
     jwksUrl: isTestEnv ? '' : (process.env.SUPABASE_JWKS_URL || '')
-  }
+  },
+  googleClientId: isTestEnv
+    ? (process.env.TEST_GOOGLE_CLIENT_ID || '').trim()
+    : (process.env.GOOGLE_CLIENT_ID || '').trim()
 };
 
 module.exports = config;

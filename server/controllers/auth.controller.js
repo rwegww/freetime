@@ -3,8 +3,11 @@ const {
   normalizeUsername,
   isValidUsername,
   hashPassword,
+  isGoogleOnlyUser,
   verifyPassword,
   signToken,
+  getPublicAuthConfig,
+  verifyGoogleAuthPayload,
   sanitizeUser
 } = require('../services/auth.service');
 const { getOnlineMemberIds, getIo } = require('../sockets');
@@ -21,15 +24,24 @@ function formatRoomSummary(room, userId) {
   };
 }
 
+async function getAuthConfig(req, res, next) {
+  try {
+    const authConfig = await getPublicAuthConfig();
+    res.json(authConfig);
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function register(req, res, next) {
   try {
-    const { username, password, name, role, color } = req.body || {};
+    const { username, password, name, role, color, rememberMe } = req.body || {};
     const cleanName = String(name || '').trim();
     const cleanUsername = normalizeUsername(username);
     const rawPassword = String(password || '');
 
     if (cleanName.length < 2) {
-      return res.status(400).json({ error: 'Vui lòng nhập họ và tên hiển thị (ít nhất 2 ký tự).' });
+      return res.status(400).json({ error: 'Vui lòng nhập tên hiển thị của bạn (ít nhất 2 ký tự).' });
     }
     if (!isValidUsername(cleanUsername)) {
       return res.status(400).json({
@@ -49,7 +61,7 @@ async function register(req, res, next) {
       passwordHash
     });
 
-    const token = signToken(user);
+    const token = signToken(user, { rememberMe: rememberMe !== false });
     res.status(201).json({
       token,
       user: sanitizeUser(user),
@@ -62,7 +74,7 @@ async function register(req, res, next) {
 
 async function login(req, res, next) {
   try {
-    const { username, password } = req.body || {};
+    const { username, password, rememberMe } = req.body || {};
     const cleanUsername = normalizeUsername(username);
     const rawPassword = String(password || '');
 
@@ -71,12 +83,20 @@ async function login(req, res, next) {
     }
 
     const user = await dbRepo.getUserByUsername(cleanUsername);
-    if (!user || !verifyPassword(rawPassword, user.passwordHash)) {
+    if (!user) {
+      return res.status(401).json({ error: 'Tên đăng nhập hoặc mật khẩu không chính xác.' });
+    }
+    if (isGoogleOnlyUser(user)) {
+      return res.status(401).json({
+        error: 'Tài khoản này đăng nhập bằng Google. Vui lòng bấm nút "Tiếp tục với Google" ở phía trên nhé!'
+      });
+    }
+    if (!verifyPassword(rawPassword, user.passwordHash)) {
       return res.status(401).json({ error: 'Tên đăng nhập hoặc mật khẩu không chính xác.' });
     }
 
     const userRooms = await dbRepo.listUserRooms(user.id);
-    const token = signToken(user);
+    const token = signToken(user, { rememberMe: rememberMe !== false });
 
     res.json({
       token,
@@ -88,10 +108,36 @@ async function login(req, res, next) {
   }
 }
 
+async function googleAuth(req, res, next) {
+  try {
+    const { idToken, accessToken, supabaseAccessToken, rememberMe } = req.body || {};
+    const googleProfile = await verifyGoogleAuthPayload({
+      idToken,
+      accessToken,
+      supabaseAccessToken
+    });
+
+    const { user, isNewUser } = await dbRepo.findOrCreateGoogleUser(googleProfile);
+    const userRooms = await dbRepo.listUserRooms(user.id);
+    const token = signToken(user, { rememberMe: rememberMe !== false });
+
+    res.status(isNewUser ? 201 : 200).json({
+      token,
+      isNewUser,
+      user: sanitizeUser(user),
+      rooms: userRooms.map(r => formatRoomSummary(r, user.id))
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function me(req, res, next) {
   try {
     const userRooms = await dbRepo.listUserRooms(req.user.id);
+    const refreshedToken = signToken(req.user, { rememberMe: true });
     res.json({
+      token: refreshedToken,
       user: sanitizeUser(req.user),
       rooms: userRooms.map(r => formatRoomSummary(r, req.user.id))
     });
@@ -136,8 +182,10 @@ async function updateProfile(req, res, next) {
 }
 
 module.exports = {
+  getAuthConfig,
   register,
   login,
+  googleAuth,
   me,
   updateProfile
 };

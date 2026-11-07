@@ -406,4 +406,79 @@ describe('Auth, Groups & Shared Group Chat Integration Tests', () => {
       await new Promise(r => slServer.close(r));
     }
   });
+
+  it('Hỗ trợ Google OAuth, tự gán màu đại diện mặc định và ghi nhớ phiên đăng nhập 365 ngày', async () => {
+    const authService = require('../server/services/auth.service');
+    const dbRepo = require('../server/repositories/db.repository');
+
+    // 1. GET /api/auth/config returns public OAuth flags
+    const resCfg = await fetch(`${baseUrl}/api/auth/config`);
+    assert.equal(resCfg.status, 200);
+    const cfgBody = await resCfg.json();
+    assert.equal(typeof cfgBody.googleClientId, 'string');
+    assert.equal(typeof cfgBody.supabaseGoogleEnabled, 'boolean');
+
+    // 2. Remember-Me token TTL: 365 days vs 24 hours
+    const tokRemember = authService.signToken(user1, { rememberMe: true });
+    const tokSession = authService.signToken(user1, { rememberMe: false });
+    const decodedRem = authService.verifyToken(tokRemember);
+    const decodedSes = authService.verifyToken(tokSession);
+    assert.equal(decodedRem.rem, true);
+    assert.equal(decodedSes.rem, false);
+    assert.ok(decodedRem.exp - Date.now() > 300 * 24 * 60 * 60 * 1000);
+    assert.ok(decodedSes.exp - Date.now() <= 25 * 60 * 60 * 1000);
+
+    // 3. Verify Google OAuth payload with mock Google verification endpoint
+    const prevClientId = process.env.GOOGLE_CLIENT_ID;
+    process.env.GOOGLE_CLIENT_ID = 'mock-client-id.apps.googleusercontent.com';
+    try {
+      const mockFetch = async (url) => {
+        if (String(url).includes('id_token=valid_google_jwt')) {
+          return {
+            ok: true,
+            json: async () => ({
+              aud: 'mock-client-id.apps.googleusercontent.com',
+              sub: 'google_sub_999888',
+              email: 'colan.google@gmail.com',
+              email_verified: 'true',
+              name: 'Cô Lan Google'
+            })
+          };
+        }
+        return { ok: false, json: async () => ({}) };
+      };
+
+      const verifiedProfile = await authService.verifyGoogleAuthPayload(
+        { idToken: 'valid_google_jwt' },
+        { fetchImpl: mockFetch }
+      );
+      assert.equal(verifiedProfile.email, 'colan.google@gmail.com');
+      assert.equal(verifiedProfile.name, 'Cô Lan Google');
+
+      const firstLogin = await dbRepo.findOrCreateGoogleUser(verifiedProfile);
+      assert.equal(firstLogin.isNewUser, true);
+      assert.equal(firstLogin.user.avatar, 'CG');
+      assert.ok(firstLogin.user.color.startsWith('#'));
+
+      const secondLogin = await dbRepo.findOrCreateGoogleUser(verifiedProfile);
+      assert.equal(secondLogin.isNewUser, false);
+      assert.equal(secondLogin.user.id, firstLogin.user.id);
+
+      // Trying password login on Google-only account gives friendly guidance
+      const resPwOnGoogle = await fetch(`${baseUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: 'colan.google@gmail.com',
+          password: 'SomePassword123'
+        })
+      });
+      assert.equal(resPwOnGoogle.status, 401);
+      const pwErr = await resPwOnGoogle.json();
+      assert.ok(pwErr.error.includes('Google'));
+    } finally {
+      if (prevClientId === undefined) delete process.env.GOOGLE_CLIENT_ID;
+      else process.env.GOOGLE_CLIENT_ID = prevClientId;
+    }
+  });
 });

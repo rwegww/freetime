@@ -645,6 +645,42 @@ async function createUser({ username, name, role, color, passwordHash }) {
   return newUser;
 }
 
+async function findOrCreateGoogleUser({ email, name, sub }) {
+  await ensureCloudLoaded();
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cleanSub = String(sub || cleanEmail).trim();
+  const oauthHashTag = `oauth$google$${cleanSub}`;
+
+  const existing = Object.values(db.users).find(
+    u => u.passwordHash === oauthHashTag || u.username.toLowerCase() === cleanEmail
+  );
+
+  if (existing) {
+    return { user: existing, isNewUser: false };
+  }
+
+  const displayName = String(name || cleanEmail.split('@')[0] || 'Thành viên').trim();
+  const palette = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#8b5cf6', '#ef4444'];
+  const chosenColor = palette[Object.keys(db.users).length % palette.length];
+  const now = new Date().toISOString();
+
+  const newUser = {
+    id: 'usr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    username: cleanEmail,
+    name: displayName.length >= 2 ? displayName : `Bạn ${displayName}`,
+    role: 'Thành viên',
+    color: chosenColor,
+    avatar: makeAvatar(displayName),
+    passwordHash: oauthHashTag,
+    createdAt: now,
+    updatedAt: now
+  };
+
+  db.users[newUser.id] = newUser;
+  await persistDB(null, newUser.id);
+  return { user: newUser, isNewUser: true };
+}
+
 async function updateUserProfile(userId, { name, role, color }) {
   await ensureCloudLoaded();
   const user = db.users[userId];
@@ -945,6 +981,7 @@ module.exports = {
   getUserById,
   getUserByUsername,
   createUser,
+  findOrCreateGoogleUser,
   updateUserProfile,
   listUserRooms,
   getUserMemberInRoom,

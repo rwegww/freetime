@@ -14,117 +14,141 @@
   <link rel="stylesheet" href="/css/chat.css" />
   <link rel="stylesheet" href="/css/auth.css" />
 </head>
-<body data-mobile-tab="schedule" data-app-stage="auth">
+<body data-mobile-tab="schedule" data-app-stage="booting">
+  <!-- Màn hình khôi phục phiên đã nhớ (chỉ hiện ~0.2s khi đang tự động vào lại tài khoản cũ) -->
+  <section class="boot-splash-screen" id="bootSplashScreen" aria-live="polite">
+    <div class="boot-splash-box">
+      <div class="boot-brand-spin" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+      </div>
+      <span>Đang vào lại tài khoản đã nhớ...</span>
+    </div>
+  </section>
+
   <!-- ==================== MÀN HÌNH ĐĂNG NHẬP / ĐĂNG KÝ ==================== -->
   <section class="auth-screen" id="authScreen">
-    <div class="auth-shell">
-      <div class="auth-hero">
-        <div class="auth-brand-row">
-          <div class="auth-brand-badge">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
-          </div>
-          <div>
-            <strong>FreeTime Sync</strong>
-            <span>Lịch làm việc & Trò chuyện nhóm</span>
-          </div>
+    <div class="auth-card-modern">
+      <div class="auth-header-centered">
+        <div class="auth-logo-mark" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
         </div>
-
-        <div class="auth-hero-copy">
-          <h2>Hẹn lịch nhóm cực nhanh, không cần hỏi từng người.</h2>
-          <p>Chọn giờ bận của bạn — hệ thống tự hiện giờ rảnh chung và mở phòng chat riêng cho nhóm.</p>
-        </div>
-
-        <ul class="auth-feature-list">
-          <li>📅 Tự động tìm giờ cả nhóm rảnh</li>
-          <li>💬 Trò chuyện & chốt hẹn chung</li>
-          <li>📱 Gọn nhẹ trên điện thoại & máy tính</li>
-        </ul>
+        <h1 class="auth-card-title">FreeTime Sync</h1>
+        <p class="auth-card-subtitle">Lịch rảnh chung & Trò chuyện nhóm</p>
       </div>
 
-      <div class="auth-form-pane">
-        <div class="auth-mobile-brand">
-          <div class="brand-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
-          </div>
-          <div>
-            <h1 class="brand-title">FreeTime Sync</h1>
-            <p class="brand-subtitle">Lịch rảnh & Trò chuyện nhóm</p>
-          </div>
-        </div>
+      <div class="auth-invite-banner hidden" id="authInviteBanner"></div>
 
-        <div class="auth-invite-banner hidden" id="authInviteBanner"></div>
-
-        <div class="auth-tabs" role="tablist">
-          <button type="button" class="auth-tab-btn active" id="tabAuthLogin" data-auth-tab="login">Đăng nhập</button>
-          <button type="button" class="auth-tab-btn" id="tabAuthRegister" data-auth-tab="register">Đăng ký mới</button>
-        </div>
-
-        <div class="auth-error-box hidden" id="authErrorBox"></div>
-
-        <!-- Form Đăng nhập -->
-        <form id="loginForm" class="auth-form">
-          <div class="form-row">
-            <label for="loginUsername">Tên đăng nhập hoặc SĐT</label>
-            <input type="text" id="loginUsername" class="modal-input" placeholder="VD: 0912345678 hoặc tuankiet" autocomplete="username" required />
+      <!-- Thẻ tài khoản đã nhớ cho lần vào tiếp theo (hiện khi người dùng từng đăng xuất) -->
+      <div class="saved-account-card hidden" id="savedAccountCard">
+        <button type="button" class="saved-account-main" id="btnUseSavedAccount" title="Tiếp tục với tài khoản đã lưu">
+          <span class="avatar-circle" id="savedAccountAvatar">TV</span>
+          <div class="saved-account-copy">
+            <span class="saved-account-tag">Đã nhớ từ lần trước</span>
+            <strong id="savedAccountName">Người dùng</strong>
+            <small id="savedAccountUsername">@username</small>
           </div>
-          <div class="form-row">
-            <label for="loginPassword">Mật khẩu</label>
-            <div class="password-field-wrap">
-              <input type="password" id="loginPassword" class="modal-input" placeholder="Nhập mật khẩu" autocomplete="current-password" required />
-              <button type="button" class="btn-toggle-pw" data-toggle-pw="loginPassword">Hiện</button>
-            </div>
-          </div>
-          <button type="submit" class="btn-primary btn-auth-submit full-width" id="btnLoginSubmit">Đăng nhập</button>
-          <div class="auth-switch-hint">
-            <span>Chưa có tài khoản?</span>
-            <button type="button" class="btn-link-inline" id="btnSwitchToRegister">Đăng ký nhanh →</button>
-          </div>
-        </form>
-
-        <!-- Form Đăng ký người dùng mới -->
-        <form id="registerForm" class="auth-form hidden">
-          <div class="form-row">
-            <label for="regName">Tên của bạn</label>
-            <input type="text" id="regName" class="modal-input" placeholder="VD: Cô Lan, Tuấn Kiệt..." autocomplete="name" required />
-          </div>
-          <div class="form-row">
-            <label for="regUsername">Số điện thoại hoặc Tên viết liền</label>
-            <input type="text" id="regUsername" class="modal-input" placeholder="VD: 0912345678 hoặc tuankiet" autocomplete="username" required />
-            <div class="username-helper-row hidden" id="regUsernameHelper"></div>
-          </div>
-          <div class="form-row">
-            <label for="regPassword">Mật khẩu (tối thiểu 6 ký tự)</label>
-            <div class="password-field-wrap">
-              <input type="password" id="regPassword" class="modal-input" placeholder="Tạo mật khẩu dễ nhớ" autocomplete="new-password" minlength="6" required />
-              <button type="button" class="btn-toggle-pw" data-toggle-pw="regPassword">Hiện</button>
-            </div>
-          </div>
-          <details class="advanced-optional-box compact-details">
-            <summary>🎨 Chọn màu đại diện / vai trò (tùy chọn)</summary>
-            <div class="form-row-inline stack-on-xs" style="margin-top: 8px;">
-              <div style="flex: 1;">
-                <input type="text" id="regRole" class="modal-input" placeholder="Vai trò (VD: Ca sáng)" aria-label="Vai trò" />
-              </div>
-              <div style="flex: 1; justify-content: center;">
-                <div class="color-picker-row" id="regColorPicker">
-                  <button type="button" class="color-swatch selected" data-color="#6366f1" style="background:#6366f1" aria-label="Màu tím"></button>
-                  <button type="button" class="color-swatch" data-color="#10b981" style="background:#10b981" aria-label="Màu xanh lá"></button>
-                  <button type="button" class="color-swatch" data-color="#f59e0b" style="background:#f59e0b" aria-label="Màu vàng cam"></button>
-                  <button type="button" class="color-swatch" data-color="#ec4899" style="background:#ec4899" aria-label="Màu hồng"></button>
-                  <button type="button" class="color-swatch" data-color="#06b6d4" style="background:#06b6d4" aria-label="Màu xanh ngọc"></button>
-                  <button type="button" class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6" aria-label="Màu tím nhạt"></button>
-                  <button type="button" class="color-swatch" data-color="#ef4444" style="background:#ef4444" aria-label="Màu đỏ"></button>
-                </div>
-              </div>
-            </div>
-          </details>
-          <button type="submit" class="btn-primary btn-auth-submit full-width" id="btnRegisterSubmit">Tạo tài khoản →</button>
-          <div class="auth-switch-hint">
-            <span>Đã có tài khoản?</span>
-            <button type="button" class="btn-link-inline" id="btnSwitchToLogin">Đăng nhập</button>
-          </div>
-        </form>
+          <span class="saved-account-arrow" aria-hidden="true">→</span>
+        </button>
+        <button type="button" class="saved-account-clear" id="btnForgetSavedAccount" title="Quên tài khoản này" aria-label="Quên tài khoản này">&times;</button>
       </div>
+
+      <!-- Nút Đăng nhập nhanh bằng Google -->
+      <button type="button" class="btn-google-oauth full-width" id="btnGoogleAuth">
+        <svg class="google-g-icon" width="19" height="19" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        <span id="btnGoogleAuthLabel">Tiếp tục với Google</span>
+      </button>
+
+      <div class="auth-or-divider"><span>hoặc dùng SĐT / tài khoản</span></div>
+
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab-btn active" id="tabAuthLogin" data-auth-tab="login">Đăng nhập</button>
+        <button type="button" class="auth-tab-btn" id="tabAuthRegister" data-auth-tab="register">Đăng ký mới</button>
+      </div>
+
+      <div class="auth-error-box hidden" id="authErrorBox"></div>
+
+      <!-- Form Đăng nhập -->
+      <form id="loginForm" class="auth-form">
+        <div class="form-row">
+          <label for="loginUsername">Số điện thoại, Email hoặc Tên đăng nhập</label>
+          <div class="input-icon-wrap">
+            <span class="input-leading-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <input type="text" id="loginUsername" name="username" class="modal-input with-leading-icon" placeholder="VD: 0912345678 hoặc tuankiet" autocomplete="username" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="loginPassword">Mật khẩu</label>
+          <div class="input-icon-wrap password-field-wrap">
+            <span class="input-leading-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <input type="password" id="loginPassword" name="password" class="modal-input with-leading-icon" placeholder="Nhập mật khẩu" autocomplete="current-password" required />
+            <button type="button" class="btn-toggle-pw" data-toggle-pw="loginPassword" aria-label="Hiện mật khẩu" title="Hiện / Ẩn mật khẩu">Hiện</button>
+          </div>
+        </div>
+
+        <label class="remember-check-row" for="loginRememberMe">
+          <input type="checkbox" id="loginRememberMe" checked />
+          <span>Ghi nhớ đăng nhập cho lần vào tiếp theo</span>
+        </label>
+
+        <button type="submit" class="btn-primary btn-auth-submit full-width" id="btnLoginSubmit">Đăng nhập →</button>
+        <div class="auth-switch-hint">
+          <span>Chưa có tài khoản?</span>
+          <button type="button" class="btn-link-inline" id="btnSwitchToRegister">Đăng ký nhanh →</button>
+        </div>
+      </form>
+
+      <!-- Form Đăng ký người dùng mới (tối giản 3 ô, tự động gán màu đại diện) -->
+      <form id="registerForm" class="auth-form hidden">
+        <div class="form-row">
+          <label for="regName">Tên hiển thị của bạn</label>
+          <div class="input-icon-wrap">
+            <span class="input-leading-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <input type="text" id="regName" name="name" class="modal-input with-leading-icon" placeholder="VD: Cô Lan, Tuấn Kiệt..." autocomplete="name" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="regUsername">Số điện thoại hoặc Tên viết liền</label>
+          <div class="input-icon-wrap">
+            <span class="input-leading-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg>
+            </span>
+            <input type="text" id="regUsername" name="username" class="modal-input with-leading-icon" placeholder="VD: 0912345678 hoặc tuankiet" autocomplete="username" required />
+          </div>
+          <div class="username-helper-row hidden" id="regUsernameHelper"></div>
+        </div>
+        <div class="form-row">
+          <label for="regPassword">Mật khẩu (tối thiểu 6 ký tự)</label>
+          <div class="input-icon-wrap password-field-wrap">
+            <span class="input-leading-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <input type="password" id="regPassword" name="new-password" class="modal-input with-leading-icon" placeholder="Tạo mật khẩu dễ nhớ" autocomplete="new-password" minlength="6" required />
+            <button type="button" class="btn-toggle-pw" data-toggle-pw="regPassword" aria-label="Hiện mật khẩu" title="Hiện / Ẩn mật khẩu">Hiện</button>
+          </div>
+        </div>
+
+        <label class="remember-check-row" for="regRememberMe">
+          <input type="checkbox" id="regRememberMe" checked />
+          <span>Ghi nhớ đăng nhập cho lần vào tiếp theo</span>
+        </label>
+
+        <button type="submit" class="btn-primary btn-auth-submit full-width" id="btnRegisterSubmit">Tạo tài khoản →</button>
+        <div class="auth-switch-hint">
+          <span>Đã có tài khoản?</span>
+          <button type="button" class="btn-link-inline" id="btnSwitchToLogin">Đăng nhập</button>
+        </div>
+      </form>
     </div>
   </section>
 
@@ -559,29 +583,11 @@
         </div>
 
         <form id="profileUpdateForm" class="add-member-form">
-          <div class="form-row-inline stack-on-xs">
-            <div style="flex: 1.5;">
-              <label for="profileNameInput">Họ và tên hiển thị *</label>
-              <input type="text" id="profileNameInput" class="modal-input" required />
-            </div>
-            <div style="flex: 1.2;">
-              <label for="profileRoleInput">Vai trò / Vị trí</label>
-              <input type="text" id="profileRoleInput" class="modal-input" placeholder="VD: Developer, Sale..." />
-            </div>
-          </div>
           <div class="form-row">
-            <label>Màu đại diện</label>
-            <div class="color-picker-row" id="memberColorPicker">
-              <button type="button" class="color-swatch selected" data-color="#6366f1" style="background:#6366f1"></button>
-              <button type="button" class="color-swatch" data-color="#10b981" style="background:#10b981"></button>
-              <button type="button" class="color-swatch" data-color="#f59e0b" style="background:#f59e0b"></button>
-              <button type="button" class="color-swatch" data-color="#ec4899" style="background:#ec4899"></button>
-              <button type="button" class="color-swatch" data-color="#06b6d4" style="background:#06b6d4"></button>
-              <button type="button" class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6"></button>
-              <button type="button" class="color-swatch" data-color="#ef4444" style="background:#ef4444"></button>
-            </div>
+            <label for="profileNameInput">Tên hiển thị của bạn</label>
+            <input type="text" id="profileNameInput" class="modal-input" required />
           </div>
-          <button type="submit" class="btn-primary full-width">Lưu thay đổi hồ sơ</button>
+          <button type="submit" class="btn-primary full-width">Lưu tên hiển thị</button>
         </form>
 
         <div class="divider-text"><span>THÀNH VIÊN CÙNG NHÓM NÀY</span></div>
@@ -686,6 +692,42 @@
         <button type="button" class="btn-outline full-width" data-close="groupCreatedModal">
           Vào bảng lịch →
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 5: Hướng dẫn kích hoạt Google OAuth (chỉ mở khi chưa điền Client ID / Supabase Google) -->
+  <div id="googleSetupModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-sheet-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <div>
+          <span class="modal-tag">Kết nối Google OAuth</span>
+          <h3>Bật đăng nhập bằng Google</h3>
+        </div>
+        <button class="modal-close-btn" data-close="googleSetupModal" aria-label="Đóng">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          Tính năng đăng nhập Google đã được tích hợp sẵn. Bạn chỉ cần bật <strong>1 trong 2 cách</strong> dưới đây là dùng được ngay:
+        </p>
+
+        <div class="oauth-guide-box">
+          <strong>Cách 1 (Nhanh nhất — qua Supabase Auth):</strong>
+          <p>Vào <strong>Supabase Dashboard → Authentication → Providers → Google</strong>, gạt nút <strong>Enable Sign in with Google</strong> và thêm URL trang web vào <em>Redirect URLs</em>.</p>
+        </div>
+
+        <div class="oauth-guide-box">
+          <strong>Cách 2 (Dùng trực tiếp Google Client ID):</strong>
+          <p>Tạo OAuth Client ID tại Google Cloud Console, thêm Origin bên dưới vào <em>Authorized JavaScript origins</em>, rồi điền biến <code>GOOGLE_CLIENT_ID</code> vào <code>.env</code> / Vercel:</p>
+          <div class="oauth-origin-copy-row">
+            <code id="googleOriginDisplay">http://localhost:3000</code>
+            <button type="button" class="btn-secondary" id="btnCopyGoogleOrigin">📋 Chép URL</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-primary full-width" data-close="googleSetupModal">Đã hiểu</button>
       </div>
     </div>
   </div>
