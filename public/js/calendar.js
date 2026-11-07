@@ -201,13 +201,14 @@ export function renderUnifiedScheduleSection() {
 
   renderMobileDayStrip();
 
-  const isShifts = state.calendarViewMode !== 'hours';
   const isPersonalScope = (state.calendarScope || 'personal') === 'personal';
 
   const table = document.getElementById('unifiedScheduleTable');
   if (table) {
-    table.dataset.calendarView = isShifts ? 'shifts' : 'hours';
+    table.dataset.calendarView = 'shifts';
     table.dataset.calendarScope = isPersonalScope ? 'personal' : 'team';
+    table.classList.toggle('team-sheet-table', !isPersonalScope);
+    table.classList.toggle('personal-schedule-table', isPersonalScope);
   }
   const scheduleCard = document.getElementById('scheduleSectionCard');
   if (scheduleCard) {
@@ -228,8 +229,8 @@ export function renderUnifiedScheduleSection() {
   const calendarHint = document.getElementById('calendarHint');
   if (calendarHint) {
     calendarHint.innerHTML = isPersonalScope
-      ? '👆 Chạm vào ô để đánh dấu <strong>bận</strong>, chạm lại để bỏ'
-      : '👆 Chạm vào ô để xem <strong>ai rảnh</strong> &amp; hẹn lịch';
+      ? '👆 Chạm vào ô ca để đánh dấu <strong>bận</strong>, chạm lại để rảnh'
+      : '👆 Chạm vào ô của <strong>bạn</strong> để tick rảnh/bận · Nhấn <strong>Chốt hẹn</strong> khi nhóm cùng rảnh';
   }
 
   const legendItemsGroup = document.getElementById('legendItemsGroup');
@@ -241,81 +242,66 @@ export function renderUnifiedScheduleSection() {
       `;
     } else {
       legendItemsGroup.innerHTML = `
+        <span class="legend-item"><span class="sheet-legend-box checked">✓</span> Rảnh</span>
+        <span class="legend-item"><span class="sheet-legend-box busy">✕</span> Bận</span>
         <span class="legend-item"><i class="swatch swatch-100"></i> Cả nhóm rảnh</span>
-        <span class="legend-item"><i class="swatch swatch-partial"></i> Một số rảnh</span>
       `;
     }
   }
 
-  const btnShifts = document.getElementById('btnViewShifts');
-  const btnHours = document.getElementById('btnViewHours');
-  if (btnShifts) {
-    btnShifts.classList.toggle('active', isShifts);
-    btnShifts.setAttribute('aria-selected', String(isShifts));
-  }
-  if (btnHours) {
-    btnHours.classList.toggle('active', !isShifts);
-    btnHours.setAttribute('aria-selected', String(!isShifts));
-  }
-
-  // 1. Render Table Header
+  // 1. Render Table Header & Body
   const headTr = document.getElementById('unifiedTableHeadRow');
-  headTr.innerHTML = `<th class="time-col-header"></th>`;
-  let todayIndex = -1;
-  for (let d = 0; d < 7; d++) {
-    const dateObj = addDays(mon, d);
-    const dateKey = formatDateKey(dateObj);
-    const isToday = dateKey === todayStr;
-    const isPast = dateKey < todayStr;
-    if (isToday) todayIndex = d;
-    const th = document.createElement('th');
-    th.dataset.day = String(d);
-    if (isToday) th.classList.add('today-col');
-    if (isPast) {
-      th.classList.add('past-col');
-      th.title = 'Ngày đã qua — không thể đăng ký lịch';
-    }
-    th.innerHTML = `
-      <span class="day-col-name"><span class="day-full">${DAY_NAMES[d]}</span><span class="day-short">${SHORT_DAY_NAMES[d]}</span></span>
-      <span class="day-col-sub">${formatShortDM(dateObj)}</span>
-    `;
-    th.addEventListener('click', () => {
-      if (window.innerWidth > 640) return;
-      state.mobileDayFilter = state.mobileDayFilter === d ? 'all' : d;
-      renderMobileDayStrip();
-    });
-    headTr.appendChild(th);
-  }
-
-  // 2. Render Table Body
   const tbody = document.getElementById('unifiedScheduleBody');
+  headTr.innerHTML = '';
   tbody.innerHTML = '';
 
   const me = getActiveMember();
   const mySched = me ? getMemberSchedule(me.id) : {};
   const targetMembers = getFilteredMembers();
   let allFreeSlotsCount = 0;
+  let todayIndex = -1;
 
-  const now = new Date();
-  const nowHour = now.getHours();
-  const nowOffsetPct = Math.round((now.getMinutes() / 60) * 100);
+  for (let d = 0; d < 7; d++) {
+    const dateObj = addDays(mon, d);
+    if (formatDateKey(dateObj) === todayStr) {
+      todayIndex = d;
+      break;
+    }
+  }
 
-  const isMyBusyAt = (d, h) => {
-    const e = mySched[`${d}-${h}`];
-    return Boolean(e && e.status === 'busy');
-  };
-  const isSameMyBusyNoteAt = (d, h, noteStr) => {
-    const e = mySched[`${d}-${h}`];
-    return Boolean(e && e.status === 'busy' && (e.note || 'Bận') === noteStr);
-  };
-  const isAllFreeAt = (d, h) => {
-    if (h < START_HOUR || isMyBusyAt(d, h)) return false;
-    const i = getSlotAvailability(d, h, targetMembers);
-    return i.total > 0 && i.freeCount === i.total;
-  };
+  if (isPersonalScope) {
+    // =========================================================================
+    // LỊCH CỦA TÔI: 7 cột (T2..CN) × 3 hàng ca (Sáng 7-12, Chiều 12-5, Tối 5-10h)
+    // =========================================================================
+    renderMobileDayStrip();
 
-  if (isShifts) {
-    // ==================== CHẾ ĐỘ 3 CA (SÁNG 7-12, CHIỀU 12-5, TỐI 5-10H) ====================
+    headTr.innerHTML = `<th class="time-col-header">Ca / Giờ</th>`;
+    for (let d = 0; d < 7; d++) {
+      const dateObj = addDays(mon, d);
+      const isToday = d === todayIndex;
+      const isPast = isDayIndexPast(d);
+      const th = document.createElement('th');
+      th.dataset.day = String(d);
+      if (isToday) th.classList.add('today-col');
+      if (isPast) {
+        th.classList.add('past-col');
+        th.title = 'Ngày đã qua — không thể đăng ký lịch';
+      }
+      th.innerHTML = `
+        <span class="day-col-name"><span class="day-full">${DAY_NAMES[d]}</span><span class="day-short">${SHORT_DAY_NAMES[d]}</span></span>
+        <span class="day-col-sub">${formatShortDM(dateObj)}</span>
+      `;
+      th.addEventListener('click', () => {
+        if (window.innerWidth > 640) return;
+        state.mobileDayFilter = state.mobileDayFilter === d ? 'all' : d;
+        renderMobileDayStrip();
+      });
+      headTr.appendChild(th);
+    }
+
+    const now = new Date();
+    const nowHour = now.getHours();
+
     for (const shift of SHIFTS) {
       const tr = document.createElement('tr');
       tr.className = `shift-row shift-row-${shift.id}`;
@@ -357,110 +343,60 @@ export function renderUnifiedScheduleSection() {
         const td = document.createElement('td');
         td.dataset.day = String(d);
         td.dataset.shift = shift.id;
-        const classes = ['unified-slot-cell', 'shift-slot-cell'];
+        const classes = ['unified-slot-cell', 'shift-slot-cell', 'personal-shift-cell'];
 
-        if (isPersonalScope) {
-          // ==================== LỊCH CÁ NHÂN: Chỉ hiện trạng thái của bạn, không lẫn thông tin nhóm ====================
-          if (isPast) {
-            classes.push('is-past-day');
-            if (isMyBusy) {
-              classes.push('cell-my-busy');
-            } else {
-              classes.push('cell-past-locked');
-            }
-          } else if (isMyBusy) {
+        if (isPast) {
+          classes.push('is-past-day');
+          if (isMyBusy) {
             classes.push('cell-my-busy');
           } else {
-            classes.push('cell-my-free');
+            classes.push('cell-past-locked');
           }
+        } else if (isMyBusy) {
+          classes.push('cell-my-busy');
+        } else {
+          classes.push('cell-my-free');
+        }
 
-          if (d === todayIndex) {
-            classes.push('is-today');
-            if (nowHour >= shift.startHour && nowHour < shift.endHour) {
-              classes.push('is-now-shift-cell');
-            }
+        if (d === todayIndex) {
+          classes.push('is-today');
+          if (nowHour >= shift.startHour && nowHour < shift.endHour) {
+            classes.push('is-now-shift-cell');
           }
+        }
 
-          td.className = classes.join(' ');
+        td.className = classes.join(' ');
+        td.title = `${DAY_NAMES[d]} • Ca ${shift.name} (${shift.rangeLabel})\n` +
+          (isMyBusy ? `Bạn: ${myBusyNote} (${myBusyEntries.length}/${shift.hours.length}h)` : 'Bạn: Rảnh ca này') +
+          (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
 
-          td.title = `${DAY_NAMES[d]} • Ca ${shift.name} (${shift.rangeLabel})\n` +
-            (isMyBusy ? `Bạn: ${myBusyNote} (${myBusyEntries.length}/${shift.hours.length}h)` : 'Bạn: Rảnh ca này') +
-            (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
-
-          let statusHtml = '';
-          if (isMyBusy) {
-            const frac = !isMyFullyBusy ? ` <small class="shift-frac">${myBusyEntries.length}/5h</small>` : '';
-            statusHtml = `<span class="shift-cell-label shift-label-busy">${escapeHtml(myBusyNote)}${frac}</span>`;
-          } else if (!isPast) {
-            statusHtml = `<span class="shift-cell-label shift-label-my-free">Rảnh</span>`;
-          }
-
-          td.innerHTML = `
-            <div class="shift-cell-inner">
-              <div class="shift-cell-main">${statusHtml}</div>
-            </div>
+        let statusHtml = '';
+        if (isMyBusy) {
+          const frac = !isMyFullyBusy ? ` <small class="shift-frac">${myBusyEntries.length}/5h</small>` : '';
+          statusHtml = `
+            <span class="shift-cell-label shift-label-busy">
+              <span class="status-icon">📌</span>
+              <span class="status-text">${escapeHtml(myBusyNote)}</span>${frac}
+            </span>
+            <span class="shift-cell-sub">Chạm để bỏ</span>
+          `;
+        } else if (!isPast) {
+          statusHtml = `
+            <span class="shift-cell-label shift-label-my-free">
+              <span class="status-icon">✨</span>
+              <span class="status-text">Rảnh</span>
+            </span>
+            <span class="shift-cell-sub">Chạm để bận</span>
           `;
         } else {
-          // ==================== LỊCH NHÓM: Tổng hợp tỷ lệ rảnh & avatar của tất cả thành viên ====================
-          if (isPast) {
-            classes.push('is-past-day');
-            if (isMyBusy) {
-              classes.push('cell-my-busy');
-            } else {
-              classes.push('cell-past-locked');
-            }
-          } else if (isMyBusy) {
-            classes.push('cell-my-busy');
-          } else if (isAllFree) {
-            classes.push('cell-all-free');
-          } else if (info.freeCount > 0) {
-            classes.push('cell-partial');
-          } else {
-            classes.push('cell-none');
-          }
-
-          if (d === todayIndex) {
-            classes.push('is-today');
-            if (nowHour >= shift.startHour && nowHour < shift.endHour) {
-              classes.push('is-now-shift-cell');
-            }
-          }
-
-          td.className = classes.join(' ');
-
-          const freeNames = info.freeMembers.map(m => m.name).join(', ') || 'Không ai';
-          td.title = `${DAY_NAMES[d]} • Ca ${shift.name} (${shift.rangeLabel})\n` +
-            `Trống ${info.freeCount}/${info.total}: ${freeNames}` +
-            (isMyBusy ? `\nBạn: ${myBusyNote} (${myBusyEntries.length}/${shift.hours.length}h)` : '') +
-            (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
-
-          let statusHtml = '';
-          if (isMyBusy) {
-            statusHtml = `<span class="shift-cell-label shift-label-busy">Bạn bận</span>`;
-          } else if (isPast) {
-            statusHtml = '';
-          } else if (isAllFree) {
-            statusHtml = `<span class="shift-cell-label shift-label-free">Cả nhóm rảnh</span>`;
-          } else if (info.freeCount > 0) {
-            statusHtml = `<span class="shift-cell-label shift-label-partial">${info.freeCount}/${info.total} rảnh</span>`;
-          } else {
-            statusHtml = `<span class="shift-cell-label shift-label-none">Không ai rảnh</span>`;
-          }
-
-          const freeAvatarsHtml = !isPast && !isMyBusy && !isAllFree && info.freeMembers.length > 0
-            ? info.freeMembers
-                .slice(0, 3)
-                .map(m => renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'mini-dot' }))
-                .join('')
-            : '';
-
-          td.innerHTML = `
-            <div class="shift-cell-inner">
-              <div class="shift-cell-main">${statusHtml}</div>
-              ${freeAvatarsHtml ? `<div class="shift-cell-avatars">${freeAvatarsHtml}</div>` : ''}
-            </div>
-          `;
+          statusHtml = `<span class="shift-cell-label shift-label-past">Đã qua</span>`;
         }
+
+        td.innerHTML = `
+          <div class="shift-cell-inner">
+            <div class="shift-cell-main">${statusHtml}</div>
+          </div>
+        `;
 
         bindShiftCellInteractions(td, d, shift);
         tr.appendChild(td);
@@ -468,153 +404,171 @@ export function renderUnifiedScheduleSection() {
       tbody.appendChild(tr);
     }
   } else {
-    // ==================== CHẾ ĐỘ TỪNG GIỜ (15H: 07:00 - 22:00) ====================
-    for (let h = START_HOUR; h < END_HOUR; h++) {
-      const tr = document.createElement('tr');
-      if (h === 7) tr.classList.add('shift-divider-morning');
-      if (h === 12) tr.classList.add('shift-divider-afternoon');
-      if (h === 17) tr.classList.add('shift-divider-evening');
+    // =========================================================================
+    // LỊCH NHÓM: BẢNG GOOGLE SHEETS MATRIX THEO MẪU VIRAL (21 HÀNG × CỘT THÀNH VIÊN)
+    // =========================================================================
+    const strip = document.getElementById('mobileDayStrip');
+    if (strip) strip.classList.add('hidden');
 
-      const timeTd = document.createElement('td');
-      timeTd.className = 'time-cell';
-      if (todayIndex !== -1 && h === nowHour) timeTd.classList.add('is-now-hour');
-      timeTd.textContent = `${String(h).padStart(2, '0')}:00`;
-      timeTd.title = formatHourRange(h);
-      tr.appendChild(timeTd);
+    headTr.innerHTML = `
+      <th class="team-sheet-th-day">Thứ</th>
+      <th class="team-sheet-th-shift">Ca</th>
+    `;
 
-      for (let d = 0; d < 7; d++) {
-        const key = `${d}-${h}`;
-        const isPast = isDayIndexPast(d);
-        const myEntry = mySched[key];
-        const isMyBusy = myEntry && myEntry.status === 'busy';
-        const myBusyNote = isMyBusy ? (myEntry.note || 'Bận') : '';
+    targetMembers.forEach(m => {
+      const isMe = me && m.id === me.id;
+      const th = document.createElement('th');
+      th.className = `team-sheet-th-member ${isMe ? 'is-me-header' : ''}`;
+      th.dataset.memberId = m.id;
+      th.innerHTML = `
+        <div class="sheet-member-header-inner">
+          <span class="sheet-member-dot" style="background-color: ${escapeHtml(m.color || '#6366f1')}"></span>
+          <span class="sheet-member-name" title="${escapeHtml(m.name)}">${escapeHtml(m.name)}</span>
+          ${isMe ? '<span class="sheet-me-badge">(Bạn)</span>' : ''}
+        </div>
+      `;
+      headTr.appendChild(th);
+    });
 
-        const info = getSlotAvailability(d, h, targetMembers);
+    const thSummary = document.createElement('th');
+    thSummary.className = 'team-sheet-th-summary';
+    thSummary.innerHTML = `<span>Cả nhóm</span>`;
+    headTr.appendChild(thSummary);
+
+    for (let d = 0; d < 7; d++) {
+      const dateObj = addDays(mon, d);
+      const isToday = d === todayIndex;
+      const isPast = isDayIndexPast(d);
+
+      SHIFTS.forEach((shift, shiftIndex) => {
+        const tr = document.createElement('tr');
+        tr.className = `team-sheet-row shift-row-${shift.id}`;
+        tr.dataset.day = String(d);
+        tr.dataset.shift = shift.id;
+
+        const info = getShiftAvailability(d, shift, targetMembers);
         const isAllFree = info.total > 0 && info.freeCount === info.total;
-        if (!isPast && isAllFree) allFreeSlotsCount++;
+        if (!isPast && isAllFree) {
+          allFreeSlotsCount += shift.hours.length;
+          tr.classList.add('team-row-all-free');
+        }
 
-        const td = document.createElement('td');
-        td.dataset.day = String(d);
-        const classes = ['unified-slot-cell'];
-        let isBlockCont = false;
+        // Cột Thứ: gộp 3 ca với rowspan="3"
+        if (shiftIndex === 0) {
+          const dayTd = document.createElement('td');
+          dayTd.rowSpan = 3;
+          dayTd.className = `team-sheet-td-day ${isToday ? 'is-today' : ''} ${isPast ? 'is-past' : ''}`;
+          dayTd.innerHTML = `
+            <div class="sheet-day-inner">
+              <strong class="sheet-day-name">${SHORT_DAY_NAMES[d]}</strong>
+              <span class="sheet-day-date">${formatShortDM(dateObj)}</span>
+              ${isToday ? '<span class="sheet-today-pill">Hôm nay</span>' : ''}
+            </div>
+          `;
+          tr.appendChild(dayTd);
+        }
 
-        if (isPersonalScope) {
-          // ==================== LỊCH CÁ NHÂN: Chỉ hiện trạng thái của bạn, không lẫn thông tin nhóm ====================
-          if (isPast) {
-            classes.push('is-past-day');
-            if (isMyBusy) {
-              classes.push('cell-my-busy');
-              isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
-            } else {
-              classes.push('cell-past-locked');
-              isBlockCont = h > START_HOUR && !isMyBusyAt(d, h - 1);
-            }
-          } else if (isMyBusy) {
-            classes.push('cell-my-busy');
-            isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
+        // Cột Ca
+        const shiftTd = document.createElement('td');
+        shiftTd.className = `team-sheet-td-shift shift-type-${shift.id}`;
+        shiftTd.innerHTML = `
+          <div class="sheet-shift-inner">
+            <span class="sheet-shift-name">${shift.name}</span>
+            <span class="sheet-shift-range">${shift.shortLabel}</span>
+          </div>
+        `;
+        tr.appendChild(shiftTd);
+
+        // Cột từng thành viên: Checkbox phong cách Google Sheets
+        targetMembers.forEach(m => {
+          const isMe = me && m.id === me.id;
+          const busyInfo = info.busyMembers.find(b => b.member.id === m.id);
+          const isMemberFree = !busyInfo;
+
+          const td = document.createElement('td');
+          td.className = `team-sheet-td-member ${isMe ? 'is-me-cell' : ''}`;
+          td.dataset.memberId = m.id;
+          td.dataset.day = String(d);
+          td.dataset.shift = shift.id;
+
+          if (isMemberFree) {
+            td.innerHTML = `
+              <div class="sheet-cell-checkbox is-free" title="${escapeHtml(m.name)}: Rảnh">
+                <span class="sheet-check-box checked">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </span>
+              </div>
+            `;
           } else {
-            classes.push('cell-my-free');
+            const noteText = busyInfo && busyInfo.note ? busyInfo.note : 'Bận';
+            td.innerHTML = `
+              <div class="sheet-cell-checkbox is-busy" title="${escapeHtml(m.name)}: ${escapeHtml(noteText)}">
+                <span class="sheet-check-box busy">✕</span>
+                ${busyInfo && busyInfo.note && busyInfo.note !== 'Bận' ? `<span class="sheet-cell-note" title="${escapeHtml(busyInfo.note)}">${escapeHtml(busyInfo.note)}</span>` : ''}
+              </div>
+            `;
           }
 
-          if (isBlockCont) classes.push('block-cont');
-          if (d === todayIndex) classes.push('is-today');
-          if (d === todayIndex && h === nowHour) {
-            classes.push('is-now');
-            td.style.setProperty('--now-offset', `${nowOffsetPct}%`);
-          }
-          td.className = classes.join(' ');
-
-          td.title = `${DAY_NAMES[d]} • ${formatHourRange(h)}\n` +
-            (isMyBusy ? `Bạn: ${myBusyNote}` : 'Bạn: Rảnh') +
-            (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
-
-          let labelHtml = '';
-          if (isMyBusy) {
-            labelHtml = !isBlockCont
-              ? `<span class="cell-label">${escapeHtml(myBusyNote)}</span>`
-              : `<span class="cell-label"></span>`;
+          if (isMe) {
+            td.classList.add('clickable-me-cell');
+            td.title = isPast
+              ? '🔒 Ngày đã qua — không thể sửa lịch'
+              : `Chạm để đổi ca ${shift.name} (${isMemberFree ? 'Đang Rảnh -> chuyển sang Bận' : 'Đang Bận -> chuyển sang Rảnh'})`;
+            td.addEventListener('click', (e) => {
+              e.stopPropagation();
+              if (isPast) {
+                showToast('🔒 Không thể thay đổi lịch của ngày đã qua.');
+                return;
+              }
+              applyPersonalShiftPaint(d, shift);
+            });
           } else {
-            labelHtml = `<span class="cell-label"></span>`;
+            td.title = `${escapeHtml(m.name)}: ${isMemberFree ? 'Rảnh' : 'Bận'}\nChạm để xem chi tiết & hẹn lịch`;
+            td.addEventListener('click', () => {
+              openSlotInspector(d, shift.startHour, shift.endHour);
+            });
           }
 
-          td.innerHTML = `
-            <div class="cell-inner">
-              ${labelHtml}
+          tr.appendChild(td);
+        });
+
+        // Cột Tổng hợp nhóm (Cả nhóm)
+        const summaryTd = document.createElement('td');
+        summaryTd.className = `team-sheet-td-summary ${isAllFree ? 'is-all-free' : (info.freeCount > 0 ? 'is-partial' : 'is-none')}`;
+        if (isAllFree) {
+          summaryTd.innerHTML = `
+            <div class="sheet-summary-inner">
+              <span class="sheet-all-free-badge">✨ Cả nhóm rảnh</span>
+              <button type="button" class="btn-sheet-propose" title="Chốt hẹn cho ca ${shift.name} ${DAY_NAMES[d]}">Chốt hẹn</button>
+            </div>
+          `;
+          const proposeBtn = summaryTd.querySelector('.btn-sheet-propose');
+          if (proposeBtn) {
+            proposeBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              openSlotInspector(d, shift.startHour, shift.endHour);
+            });
+          }
+        } else if (info.freeCount > 0) {
+          summaryTd.innerHTML = `
+            <div class="sheet-summary-inner">
+              <span class="sheet-partial-badge">${info.freeCount}/${info.total} rảnh</span>
             </div>
           `;
         } else {
-          // ==================== LỊCH NHÓM: Tổng hợp tỷ lệ rảnh & avatar của tất cả thành viên ====================
-          if (isPast) {
-            classes.push('is-past-day');
-            if (isMyBusy) {
-              classes.push('cell-my-busy');
-              isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
-            } else {
-              classes.push('cell-past-locked');
-              isBlockCont = h > START_HOUR && !isMyBusyAt(d, h - 1);
-            }
-          } else if (isMyBusy) {
-            classes.push('cell-my-busy');
-            isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
-          } else if (isAllFree) {
-            classes.push('cell-all-free');
-            isBlockCont = isAllFreeAt(d, h - 1);
-          } else if (info.freeCount > 0) {
-            classes.push('cell-partial');
-          } else {
-            classes.push('cell-none');
-          }
-          if (isBlockCont) classes.push('block-cont');
-          if (d === todayIndex) classes.push('is-today');
-          if (d === todayIndex && h === nowHour) {
-            classes.push('is-now');
-            td.style.setProperty('--now-offset', `${nowOffsetPct}%`);
-          }
-          td.className = classes.join(' ');
-
-          const freeNames = info.freeMembers.map(m => m.name).join(', ') || 'Không ai';
-          td.title = `${DAY_NAMES[d]} • ${formatHourRange(h)}\nTrống ${info.freeCount}/${info.total}: ${freeNames}` +
-            (isMyBusy ? `\nBạn: ${myBusyNote}` : '') +
-            (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
-
-          let labelHtml = '';
-          if (isMyBusy) {
-            labelHtml = !isBlockCont
-              ? `<span class="cell-label">${escapeHtml(myBusyNote)}</span>`
-              : `<span class="cell-label"></span>`;
-          } else if (isPast) {
-            labelHtml = `<span class="cell-label"></span>`;
-          } else if (isAllFree && !isBlockCont) {
-            labelHtml = `<span class="cell-label cell-free-text">Nhóm rảnh</span>`;
-          } else if (!isMyBusy && !isAllFree && info.freeCount > 0) {
-            labelHtml = `<span class="cell-label cell-partial-names">Trống: ${escapeHtml(freeNames)}</span>`;
-          } else {
-            labelHtml = `<span class="cell-label"></span>`;
-          }
-
-          const freeAvatarsHtml = !isPast && !isMyBusy && !isAllFree
-            ? info.freeMembers
-              .slice(0, 3)
-              .map(m => renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'mini-dot' }))
-              .join('')
-            : '';
-
-          td.innerHTML = `
-            <div class="cell-inner">
-              ${labelHtml}
-              <span class="cell-right">
-                <span class="cell-avatars">${freeAvatarsHtml}</span>
-                <span class="cell-ratio">${info.freeCount}/${info.total}</span>
-              </span>
+          summaryTd.innerHTML = `
+            <div class="sheet-summary-inner">
+              <span class="sheet-none-badge">0/${info.total}</span>
             </div>
           `;
         }
+        summaryTd.addEventListener('click', () => {
+          openSlotInspector(d, shift.startHour, shift.endHour);
+        });
 
-        bindSlotCellInteractions(td, d, h);
-        tr.appendChild(td);
-      }
-
-      tbody.appendChild(tr);
+        tr.appendChild(summaryTd);
+        tbody.appendChild(tr);
+      });
     }
   }
 
@@ -635,14 +589,21 @@ export function renderUnifiedScheduleSection() {
 
   renderBestContinuousSlots(targetMembers);
 
-  if (!didInitialTodayScroll && todayIndex > 1) {
+  if (!didInitialTodayScroll && todayIndex > 0) {
     didInitialTodayScroll = true;
     requestAnimationFrame(() => {
       const wrapper = document.getElementById('calendarTableWrapper');
-      const todayTh = headTr.querySelector('th.today-col');
-      if (wrapper && todayTh && wrapper.scrollWidth > wrapper.clientWidth + 20) {
-        const targetLeft = Math.max(0, todayTh.offsetLeft - 72);
-        wrapper.scrollLeft = targetLeft;
+      if (!wrapper) return;
+      if (isPersonalScope) {
+        const todayTh = headTr.querySelector('th.today-col');
+        if (todayTh && wrapper.scrollWidth > wrapper.clientWidth + 20) {
+          wrapper.scrollLeft = Math.max(0, todayTh.offsetLeft - 72);
+        }
+      } else {
+        const todayRow = tbody.querySelector(`tr[data-day="${todayIndex}"]`);
+        if (todayRow && todayRow.offsetTop > 120) {
+          wrapper.scrollTop = Math.max(0, todayRow.offsetTop - 60);
+        }
       }
     });
   }

@@ -1882,3 +1882,480 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ==================== BẢNG LỊCH NHÓM PHONG CÁCH GOOGLE SHEETS VIRAL ==================== */
+.schedule-grid-table.team-sheet-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  border-top: 1px solid #cbd5e1;
+  border-left: 1px solid #cbd5e1;
+  background: #ffffff;
+}
+
+/* Header hàng đầu */
+.team-sheet-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  padding: 8px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  border-right: 1px solid #cbd5e1;
+  border-bottom: 2px solid #cbd5e1;
+  background: #f1f5f9;
+  color: #334155;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Cột Thứ & Ca cố định bên trái khi cuộn ngang */
+.team-sheet-table thead th.team-sheet-th-day {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  width: 76px;
+  min-width: 76px;
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.team-sheet-table thead th.team-sheet-th-shift {
+  position: sticky;
+  left: 76px;
+  z-index: 20;
+  width: 84px;
+  min-width: 84px;
+  background: #e2e8f0;
+  color: #1e293b;
+  border-right: 2px solid #94a3b8;
+}
+
+/* Header thành viên màu vàng đặc trưng Google Sheets */
+.team-sheet-table thead th.team-sheet-th-member {
+  min-width: 86px;
+  max-width: 140px;
+  background: #fef08a; /* Vàng chuẩn Google Sheets */
+  color: #713f12;
+}
+
+.team-sheet-table thead th.team-sheet-th-member.is-me-header {
+  background: #fde047;
+  color: #713f12;
+  box-shadow: inset 0 -3px 0 0 #d97706;
+}
+
+.sheet-member-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.sheet-member-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sheet-member-name {
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+
+.sheet-me-badge {
+  font-size: 10px;
+  font-weight: 800;
+  color: #b45309;
+}
+
+.team-sheet-table thead th.team-sheet-th-summary {
+  min-width: 110px;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+/* Các hàng trong thân bảng (21 hàng) */
+.team-sheet-table tbody td {
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 4px;
+  vertical-align: middle;
+}
+
+/* Cột Thứ màu xanh cyan với rowspan=3 */
+.team-sheet-table tbody td.team-sheet-td-day {
+  position: sticky;
+  left: 0;
+  z-index: 8;
+  background: #bae6fd; /* Xanh cyan Google Sheets */
+  border-right: 1px solid #7dd3fc;
+  border-bottom: 2px solid #38bdf8;
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px 4px;
+}
+
+.sheet-day-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.sheet-day-name {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0369a1;
+}
+
+.sheet-day-date {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0284c7;
+}
+
+.sheet-today-pill {
+  font-size: 9px;
+  font-weight: 800;
+  background: #0284c7;
+  color: #ffffff;
+  padding: 1px 6px;
+  border-radius: 999px;
+  margin-top: 3px;
+  letter-spacing: 0.02em;
+}
+
+.team-sheet-td-day.is-today {
+  background: #7dd3fc;
+}
+
+.team-sheet-td-day.is-past {
+  opacity: 0.85;
+}
+
+/* Cột Ca (Sáng, Chiều, Tối) */
+.team-sheet-table tbody td.team-sheet-td-shift {
+  position: sticky;
+  left: 76px;
+  z-index: 8;
+  background: #f8fafc;
+  border-right: 2px solid #94a3b8;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: center;
+  padding: 6px 4px;
+}
+
+.sheet-shift-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.sheet-shift-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.sheet-shift-range {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* Cột thành viên: Ô Checkbox */
+.team-sheet-table tbody td.team-sheet-td-member {
+  text-align: center;
+  background: #ffffff;
+  transition: background-color 0.15s ease;
+}
+
+.team-sheet-table tbody td.team-sheet-td-member.is-me-cell {
+  background: #fcfdfd;
+}
+
+.team-sheet-table tbody td.team-sheet-td-member.clickable-me-cell {
+  cursor: pointer;
+}
+
+.team-sheet-table tbody td.team-sheet-td-member.clickable-me-cell:hover {
+  background: #f0fdf4;
+}
+
+.sheet-cell-checkbox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 32px;
+}
+
+.sheet-check-box {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.clickable-me-cell:hover .sheet-check-box {
+  transform: scale(1.14);
+}
+
+.sheet-check-box.checked {
+  border: 2px solid #16a34a;
+  background: #dcfce7;
+  color: #15803d;
+  box-shadow: 0 1px 2px rgba(22, 163, 74, 0.2);
+}
+
+.sheet-check-box.busy {
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+.is-me-cell .sheet-check-box.busy {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.sheet-cell-note {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #dc2626;
+  max-width: 82px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.15;
+}
+
+/* Cột Tổng hợp nhóm (Cả nhóm) */
+.team-sheet-table tbody td.team-sheet-td-summary {
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.sheet-summary-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sheet-all-free-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: #15803d;
+  white-space: nowrap;
+}
+
+.btn-sheet-propose {
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(22, 163, 74, 0.35);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-sheet-propose:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+.sheet-partial-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.sheet-none-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+/* Hàng cả nhóm cùng rảnh sáng đèn kỷ niệm */
+.team-row-all-free td.team-sheet-td-member {
+  background: #f0fdf4 !important;
+}
+
+.team-row-all-free td.team-sheet-td-shift {
+  background: #ecfdf5 !important;
+}
+
+.team-row-all-free td.team-sheet-td-summary {
+  background: #dcfce7 !important;
+}
+
+/* Legend Checkboxes */
+.sheet-legend-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.sheet-legend-box.checked {
+  border: 1.5px solid #16a34a;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.sheet-legend-box.busy {
+  border: 1.5px solid #cbd5e1;
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+/* ==================== LỊCH CÁ NHÂN GỌN GÀNG & RÕ RÀNG ==================== */
+.personal-schedule-table .unified-slot-cell {
+  height: clamp(86px, calc((100dvh - 270px) / 3), 136px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.personal-shift-cell {
+  padding: 4px;
+}
+
+.personal-shift-cell.cell-my-free {
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+  color: #166534;
+}
+
+.personal-shift-cell.cell-my-free:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.personal-shift-cell.cell-my-busy {
+  background: #eef2ff;
+  border: 1.5px solid #818cf8;
+  color: #3730a3;
+}
+
+.personal-shift-cell.cell-my-busy:hover {
+  background: #e0e7ff;
+  border-color: #6366f1;
+}
+
+.personal-shift-cell.cell-past-locked {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.personal-shift-cell .shift-cell-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 4px;
+  text-align: center;
+}
+
+.personal-shift-cell .shift-cell-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  word-break: normal;
+}
+
+.personal-shift-cell .status-icon {
+  font-size: 13px;
+}
+
+.personal-shift-cell .shift-cell-sub {
+  font-size: 10.5px;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Mobile Tweak for Team Sheet Table */
+@media (max-width: 640px) {
+  .team-sheet-table thead th.team-sheet-th-day {
+    width: 58px;
+    min-width: 58px;
+  }
+
+  .team-sheet-table thead th.team-sheet-th-shift {
+    left: 58px;
+    width: 66px;
+    min-width: 66px;
+  }
+
+  .team-sheet-table tbody td.team-sheet-td-day {
+    width: 58px;
+    min-width: 58px;
+  }
+
+  .team-sheet-table tbody td.team-sheet-td-shift {
+    left: 58px;
+    width: 66px;
+    min-width: 66px;
+  }
+
+  .team-sheet-table thead th.team-sheet-th-member {
+    min-width: 62px;
+    padding: 6px 4px;
+  }
+
+  .sheet-member-name {
+    font-size: 11px;
+    max-width: 55px;
+  }
+
+  .sheet-check-box {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+  }
+
+  .team-sheet-table thead th.team-sheet-th-summary {
+    min-width: 90px;
+  }
+}

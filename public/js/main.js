@@ -1443,18 +1443,6 @@ function bindWorkspaceEvents() {
     });
   });
 
-  // Chuyển đổi chế độ xem lịch: 3 Ca (7-12, 12-5, 5-10h) hoặc Từng giờ (15h)
-  document.querySelectorAll('[data-calendar-view]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const mode = btn.dataset.calendarView;
-      state.calendarViewMode = mode;
-      try {
-        localStorage.setItem('freetime_calendar_view', mode);
-      } catch (_) {}
-      renderUnifiedScheduleSection();
-    });
-  });
-
   document.querySelectorAll('.btn-preset[data-preset]').forEach(btn => {
     btn.addEventListener('click', () => {
       const me = getActiveMember();

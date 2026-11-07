@@ -12,7 +12,6 @@ export const state = {
   selectedFilterMemberIds: new Set(),
   paintMode: 'busy', // 'busy' | 'free' | 'inspect'
   calendarScope: (typeof window !== 'undefined' && window.localStorage && localStorage.getItem('freetime_calendar_scope')) || 'personal', // 'personal' | 'team'
-  calendarViewMode: (typeof window !== 'undefined' && window.localStorage && localStorage.getItem('freetime_calendar_view')) || 'shifts', // 'shifts' | 'hours'
   selectedColor: '#6366f1',
   profileColor: '#6366f1',
   inspectedSlot: null,
