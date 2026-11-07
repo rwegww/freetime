@@ -18,7 +18,8 @@ export const state = {
   activeMobileTab: 'schedule', // 'schedule' | 'chat'
   unreadChatCount: 0,
   mobileDayFilter: 'all', // 'all' | 0..6
-  mobileToolsOpen: false
+  mobileToolsOpen: false,
+  insightsOpen: false
 };
 
 export function getWeekKey() {

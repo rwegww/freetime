@@ -280,7 +280,7 @@
         </button>
         <button id="btnCopyRoomLink" class="btn-ghost btn-invite" title="Lấy link chia sẻ nhóm để gửi qua Zalo, Messenger" aria-label="Chia sẻ link nhóm">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          <span class="btn-label">Chia sẻ link</span>
+          <span class="btn-label">Chia sẻ</span>
         </button>
       </div>
     </div>
@@ -304,6 +304,10 @@
 
     <!-- Current Logged-in Account -->
     <div class="header-right">
+      <button type="button" class="btn-cloud-help" id="btnReplayCloudTour" title="Xem lại đám mây hướng dẫn" aria-label="Xem hướng dẫn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="#38bdf8" stroke="#0284c7" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+        <span class="cloud-help-label">Hướng dẫn</span>
+      </button>
       <button id="btnOpenMemberModal" class="user-profile-btn" title="Hồ sơ tài khoản & Đăng xuất">
         <span class="avatar-circle" id="activeUserAvatar">MA</span>
         <div class="user-info-text">
@@ -318,33 +322,17 @@
   <main class="main-two-sections">
     <!-- ==================== PHẦN 1: ĐĂNG KÝ LỊCH LÀM VIỆC & SUY RA GIỜ TRỐNG ==================== -->
     <section class="section-schedule card" id="scheduleSectionCard">
-      <div class="section-head">
-        <div class="section-title-group">
-          <div class="section-icon icon-indigo" aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
-          </div>
-          <div class="section-title-copy">
-            <h2>Lịch nhóm</h2>
-            <p>Chọn ô giờ bận của <strong id="toolbarMemberName">bạn</strong></p>
-          </div>
-        </div>
-        <div class="sync-badge" id="syncStatusIndicator">
-          <span class="sync-dot"></span>
-          <span id="syncStatusText">Đã đồng bộ</span>
-        </div>
-      </div>
-
-      <!-- Thanh công cụ -->
+      <!-- Thanh thao tác gọn trên đầu lịch -->
       <div class="register-toolbar">
         <div class="toolbar-primary-row">
           <div class="segmented" role="tablist" aria-label="Chế độ thao tác trên lịch">
             <button id="btnModeBusy" class="mode-pill active" data-mode="busy" title="Nhấn vào ô để đánh dấu hoặc bỏ chọn giờ bận">
               <span class="dot dot-busy"></span>
-              <span>Đăng ký <span class="hide-xxs">bận</span></span>
+              <span>Bận</span>
             </button>
             <button id="btnModeFree" class="mode-pill" data-mode="free" title="Nhấn vào ô để xóa giờ bận">
               <span class="dot dot-free"></span>
-              <span>Xóa <span class="hide-xxs">(trống)</span></span>
+              <span>Xóa</span>
             </button>
             <button id="btnModeInspect" class="mode-pill" data-mode="inspect" title="Chạm vào ô bất kỳ để xem chi tiết & đề xuất giờ hẹn">
               <span class="dot dot-inspect"></span>
@@ -352,28 +340,34 @@
             </button>
           </div>
 
-          <button type="button" id="btnToggleMobileTools" class="btn-mobile-tools" aria-expanded="false" title="Mở ca mẫu, ghi chú & lọc thành viên">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="18" r="2" fill="currentColor"/></svg>
-            <span>Tùy chọn</span>
-            <span class="filter-active-dot hidden" id="mobileFilterActiveDot"></span>
-          </button>
+          <div class="toolbar-quick-actions">
+            <button type="button" id="btnToggleInsights" class="btn-insights-toggle" aria-expanded="false" title="Xem gợi ý khung giờ cả nhóm cùng rảnh">
+              <span class="dot dot-free"></span>
+              <span id="statAllFreeHours">0h rảnh</span>
+              <svg class="chev-sm" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+
+            <button type="button" id="btnToggleMobileTools" class="btn-mobile-tools" aria-expanded="false" title="Chọn ca nhanh, ghi chú & lọc thành viên">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="18" r="2" fill="currentColor"/></svg>
+              <span class="tools-btn-label">Tùy chọn</span>
+              <span class="filter-active-dot hidden" id="mobileFilterActiveDot"></span>
+            </button>
+          </div>
         </div>
 
-        <div class="toolbar-collapsible" id="toolbarCollapsible">
-          <div class="note-input-group">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-            <input
-              type="text"
-              id="busyNoteInput"
-              class="input-compact"
-              placeholder="Ghi chú ca làm (VD: Ca sáng, Họp...)"
-              value="Ca làm việc"
-              aria-label="Ghi chú ca làm"
-            />
+        <!-- Ngăn kéo 1: Gợi ý khung giờ rảnh chung -->
+        <div class="insights-drawer" id="insightsDrawer">
+          <div class="insights-drawer-head">
+            <span class="insight-label">Gợi ý giờ rảnh dài nhất (chạm để chốt)</span>
+            <span class="personal-mini-stat">
+              Bạn: <strong id="statMyBusyHours">0h bận</strong> · <span id="statMyFreeHours">0h trống</span>
+            </span>
           </div>
+          <div id="bestSlotsList" class="best-slots-cards"></div>
+        </div>
 
-          <div class="toolbar-divider"></div>
-
+        <!-- Ngăn kéo 2: Ca mẫu nhanh, Ghi chú & Lọc thành viên -->
+        <div class="toolbar-collapsible" id="toolbarCollapsible">
           <div class="preset-group">
             <span class="toolbar-label">Nhanh T2–T6</span>
             <button class="btn-preset" data-preset="office" title="8h-12h & 13h-17h">Hành chính</button>
@@ -385,51 +379,49 @@
               Xóa tuần
             </button>
           </div>
+
+          <div class="tools-secondary-row">
+            <div class="note-input-group">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              <input
+                type="text"
+                id="busyNoteInput"
+                class="input-compact"
+                placeholder="Ghi chú ca làm (VD: Ca sáng, Họp...)"
+                value="Ca làm việc"
+                aria-label="Ghi chú ca làm"
+              />
+            </div>
+
+            <div class="sync-badge" id="syncStatusIndicator">
+              <span class="sync-dot"></span>
+              <span id="syncStatusText">Đã đồng bộ</span>
+              <span class="hidden" id="toolbarMemberName">bạn</span>
+            </div>
+          </div>
+
+          <div class="insight-filter">
+            <div class="filter-label-row">
+              <span class="insight-label">Tính giờ rảnh cho</span>
+              <button id="btnSelectAllMembers" class="btn-link-sm">Chọn tất cả</button>
+            </div>
+            <div id="memberFilterChips" class="member-chips-container"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Giờ trống chung -->
-      <div class="insight-strip">
-        <div class="insight-stats">
-          <div class="stat">
-            <span class="stat-value" id="statAllFreeHours">0 khung giờ</span>
-            <span class="stat-label">cả nhóm cùng trống</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value stat-busy" id="statMyBusyHours">0h làm việc</span>
-            <span class="stat-label">của bạn · <span id="statMyFreeHours">0h trống</span></span>
-          </div>
-        </div>
-
-        <div class="insight-slots">
-          <span class="insight-label">Gợi ý khung trống dài nhất</span>
-          <div id="bestSlotsList" class="best-slots-cards"></div>
-        </div>
-
-        <div class="insight-filter">
-          <div class="filter-label-row">
-            <span class="insight-label">Tính cho</span>
-            <button id="btnSelectAllMembers" class="btn-link-sm">Chọn tất cả</button>
-          </div>
-          <div id="memberFilterChips" class="member-chips-container"></div>
-        </div>
-      </div>
-
-      <!-- Chú thích -->
+      <!-- Chú thích siêu gọn 1 dòng -->
       <div class="grid-legend-bar">
         <div class="legend-items">
           <span class="legend-item"><i class="swatch swatch-my-busy"></i> Bạn bận</span>
-          <span class="legend-item"><i class="swatch swatch-100"></i> Cả nhóm rảnh</span>
-          <span class="legend-item"><i class="swatch swatch-partial"></i> Rảnh một phần</span>
+          <span class="legend-item"><i class="swatch swatch-100"></i> Nhóm rảnh</span>
+          <span class="legend-item"><i class="swatch swatch-partial"></i> Rảnh 1 phần</span>
         </div>
-        <button type="button" class="btn-cloud-help" id="btnReplayCloudTour" title="Xem lại đám mây hướng dẫn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="#38bdf8" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
-          <span>Hướng dẫn</span>
-        </button>
+        <span class="legend-hint" id="gridZoomHint">Chạm thứ để xem 1 ngày</span>
       </div>
 
-      <!-- Bộ chọn ngày nhanh cho điện thoại -->
-      <div class="mobile-day-strip" id="mobileDayStrip" role="tablist" aria-label="Chọn ngày hiển thị"></div>
+      <!-- Bộ chọn ngày nhanh cho điện thoại (chỉ hiện khi đang xem phóng to 1 ngày) -->
+      <div class="mobile-day-strip hidden" id="mobileDayStrip" role="tablist" aria-label="Chọn ngày hiển thị"></div>
 
       <div class="calendar-table-wrapper" id="calendarTableWrapper">
         <table class="schedule-grid-table" id="unifiedScheduleTable" data-mobile-day="all">

@@ -2,6 +2,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+const explicitDbPath = process.env.DB_PATH;
+
 // Simple .env loader without external dependency
 const envFile = path.resolve(__dirname, '../../.env');
 if (fs.existsSync(envFile)) {
@@ -23,17 +25,24 @@ if (fs.existsSync(envFile)) {
 const isTestEnv =
   process.env.NODE_ENV === 'test' ||
   process.env.DISABLE_SUPABASE === '1' ||
-  Boolean(process.env.NODE_TEST_CONTEXT);
+  Boolean(process.env.NODE_TEST_CONTEXT) ||
+  process.execArgv.some((arg) => arg === '--test' || arg.startsWith('--test'));
 
 const isServerless = Boolean(process.env.VERCEL);
 
-const config = {
-  port: parseInt(process.env.PORT || '3000', 10),
-  dbPath: process.env.DB_PATH && !isServerless
+const resolvedDbPath = isTestEnv
+  ? explicitDbPath
+    ? path.resolve(process.cwd(), explicitDbPath)
+    : path.join(os.tmpdir(), `freetime-test-db-${process.pid}.json`)
+  : process.env.DB_PATH && !isServerless
     ? path.resolve(process.cwd(), process.env.DB_PATH)
     : isServerless
       ? path.join(os.tmpdir(), 'freetime-db.json')
-      : path.resolve(__dirname, isTestEnv ? '../../data/test-db.json' : '../../data/db.json'),
+      : path.resolve(__dirname, '../../data/db.json');
+
+const config = {
+  port: parseInt(process.env.PORT || '3000', 10),
+  dbPath: resolvedDbPath,
   supabase: {
     url: isTestEnv ? '' : (process.env.SUPABASE_URL || '').replace(/\/+$/, ''),
     publishableKey: isTestEnv ? '' : (process.env.SUPABASE_PUBLISHABLE_KEY || ''),

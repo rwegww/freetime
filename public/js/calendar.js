@@ -65,18 +65,24 @@ export function renderMemberFilterChips() {
 export function renderMobileDayStrip() {
   const strip = document.getElementById('mobileDayStrip');
   const table = document.getElementById('unifiedScheduleTable');
+  const zoomHint = document.getElementById('gridZoomHint');
   if (!strip || !table || !state.room) return;
 
   const mon = state.currentWeekMonday;
   const todayStr = formatDateKey(new Date());
+  const isAll = state.mobileDayFilter === 'all';
   table.dataset.mobileDay = String(state.mobileDayFilter);
+  strip.classList.toggle('hidden', isAll);
+  if (zoomHint) {
+    zoomHint.textContent = isAll ? 'Chạm thứ để xem 1 ngày' : 'Chạm lại tên thứ để về cả tuần';
+  }
 
   strip.innerHTML = '';
 
   const allBtn = document.createElement('button');
   allBtn.type = 'button';
-  allBtn.className = `mobile-day-pill ${state.mobileDayFilter === 'all' ? 'active' : ''}`;
-  allBtn.textContent = '7 ngày';
+  allBtn.className = `mobile-day-pill back-week-pill ${isAll ? 'active' : ''}`;
+  allBtn.textContent = '← Cả tuần';
   allBtn.addEventListener('click', () => {
     state.mobileDayFilter = 'all';
     renderMobileDayStrip();
@@ -98,6 +104,15 @@ export function renderMobileDayStrip() {
       renderMobileDayStrip();
     });
     strip.appendChild(btn);
+  }
+
+  if (!isAll) {
+    requestAnimationFrame(() => {
+      const activeBtn = strip.querySelector('.mobile-day-pill.active:not(.back-week-pill)');
+      if (activeBtn) {
+        strip.scrollLeft = Math.max(0, activeBtn.offsetLeft - 95);
+      }
+    });
   }
 }
 
@@ -129,6 +144,11 @@ export function renderUnifiedScheduleSection() {
       <span class="day-col-name"><span class="day-full">${DAY_NAMES[d]}</span><span class="day-short">${SHORT_DAY_NAMES[d]}</span></span>
       <span class="day-col-sub">${formatShortDM(dateObj)}</span>
     `;
+    th.addEventListener('click', () => {
+      if (window.innerWidth > 640) return;
+      state.mobileDayFilter = state.mobileDayFilter === d ? 'all' : d;
+      renderMobileDayStrip();
+    });
     headTr.appendChild(th);
   }
 
@@ -148,6 +168,10 @@ export function renderUnifiedScheduleSection() {
   const isMyBusyAt = (d, h) => {
     const e = mySched[`${d}-${h}`];
     return Boolean(e && e.status === 'busy');
+  };
+  const isSameMyBusyNoteAt = (d, h, noteStr) => {
+    const e = mySched[`${d}-${h}`];
+    return Boolean(e && e.status === 'busy' && (e.note || 'Ca làm việc') === noteStr);
   };
   const isAllFreeAt = (d, h) => {
     if (h < START_HOUR || isMyBusyAt(d, h)) return false;
@@ -169,6 +193,7 @@ export function renderUnifiedScheduleSection() {
       const isPast = isDayIndexPast(d);
       const myEntry = mySched[key];
       const isMyBusy = myEntry && myEntry.status === 'busy';
+      const myBusyNote = isMyBusy ? (myEntry.note || 'Ca làm việc') : '';
 
       const info = getSlotAvailability(d, h, targetMembers);
       const isAllFree = info.total > 0 && info.freeCount === info.total;
@@ -182,12 +207,14 @@ export function renderUnifiedScheduleSection() {
         classes.push('is-past-day');
         if (isMyBusy) {
           classes.push('cell-my-busy');
+          isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
         } else {
           classes.push('cell-past-locked');
           isBlockCont = h > START_HOUR && !isMyBusyAt(d, h - 1);
         }
       } else if (isMyBusy) {
         classes.push('cell-my-busy');
+        isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
       } else if (isAllFree) {
         classes.push('cell-all-free');
         isBlockCont = isAllFreeAt(d, h - 1);
@@ -206,16 +233,18 @@ export function renderUnifiedScheduleSection() {
 
       const freeNames = info.freeMembers.map(m => m.name).join(', ') || 'Không ai';
       td.title = `${DAY_NAMES[d]} • ${formatHourRange(h)}\nTrống ${info.freeCount}/${info.total}: ${freeNames}` +
-        (isMyBusy ? `\nBạn: ${myEntry.note || 'Làm việc'}` : '') +
+        (isMyBusy ? `\nBạn: ${myBusyNote}` : '') +
         (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
 
       let labelHtml = '';
       if (isMyBusy) {
-        labelHtml = `<span class="cell-label">${escapeHtml(myEntry.note || 'Làm việc')}</span>`;
+        labelHtml = !isBlockCont
+          ? `<span class="cell-label">${escapeHtml(myBusyNote)}</span>`
+          : `<span class="cell-label"></span>`;
       } else if (isPast) {
-        labelHtml = !isBlockCont ? `<span class="cell-label">Đã qua</span>` : `<span class="cell-label"></span>`;
+        labelHtml = `<span class="cell-label"></span>`;
       } else if (isAllFree && !isBlockCont) {
-        labelHtml = `<span class="cell-label">Cả nhóm trống</span>`;
+        labelHtml = `<span class="cell-label cell-free-text">Nhóm rảnh</span>`;
       } else if (!isMyBusy && !isAllFree && info.freeCount > 0) {
         labelHtml = `<span class="cell-label cell-partial-names">Trống: ${escapeHtml(freeNames)}</span>`;
       } else {
@@ -248,21 +277,20 @@ export function renderUnifiedScheduleSection() {
   }
 
   // 3. Update Summary Stats
-  document.getElementById('statAllFreeHours').textContent = `${allFreeSlotsCount} khung giờ`;
+  document.getElementById('statAllFreeHours').textContent = `${allFreeSlotsCount}h rảnh`;
   const mobileFreeBadge = document.getElementById('mobileTabFreeBadge');
-  if (mobileFreeBadge) mobileFreeBadge.textContent = `${allFreeSlotsCount} trống`;
+  if (mobileFreeBadge) mobileFreeBadge.textContent = `${allFreeSlotsCount}h rảnh`;
 
   const totalSlots = 7 * (END_HOUR - START_HOUR);
   if (me) {
     const myBusy = Object.values(mySched).filter(x => x && x.status === 'busy').length;
     const myFree = totalSlots - myBusy;
-    document.getElementById('statMyBusyHours').textContent = `${myBusy}h làm việc`;
+    document.getElementById('statMyBusyHours').textContent = `${myBusy}h bận`;
     document.getElementById('statMyFreeHours').textContent = `${myFree}h trống`;
   }
 
   renderBestContinuousSlots(targetMembers);
 
-  // Auto-scroll horizontally on mobile 7-day view to bring today's column into view once
   if (!didInitialTodayScroll && todayIndex > 1) {
     didInitialTodayScroll = true;
     requestAnimationFrame(() => {

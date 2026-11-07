@@ -490,7 +490,9 @@ function renderHeader() {
   else if (diffWeeks > 1) weekTitle = `${diffWeeks} tuần sau`;
 
   document.getElementById('currentWeekLabel').textContent = weekTitle;
-  document.getElementById('currentWeekRange').textContent = `${formatShortDM(mon)} - ${formatShortDM(sun)}/${sun.getFullYear()}`;
+  const nowYear = new Date().getFullYear();
+  const suffixYear = sun.getFullYear() !== nowYear ? `/${sun.getFullYear()}` : '';
+  document.getElementById('currentWeekRange').textContent = `${formatShortDM(mon)} - ${formatShortDM(sun)}${suffixYear}`;
 
   const me = getActiveMember() || state.currentUser;
   const avatarEl = document.getElementById('activeUserAvatar');
@@ -1305,15 +1307,39 @@ function bindWorkspaceEvents() {
     btn.addEventListener('click', () => setPaintMode(btn.dataset.mode));
   });
 
+  const setScheduleDrawer = (drawer) => {
+    const nextInsights = drawer === 'insights' ? !state.insightsOpen : false;
+    const nextTools = drawer === 'tools' ? !state.mobileToolsOpen : false;
+    state.insightsOpen = nextInsights;
+    state.mobileToolsOpen = nextTools;
+
+    const card = document.getElementById('scheduleSectionCard');
+    if (card) {
+      card.classList.toggle('insights-open', nextInsights);
+      card.classList.toggle('mobile-tools-open', nextTools);
+    }
+
+    const btnInsights = document.getElementById('btnToggleInsights');
+    if (btnInsights) {
+      btnInsights.classList.toggle('active', nextInsights);
+      btnInsights.setAttribute('aria-expanded', String(nextInsights));
+    }
+
+    const btnTools = document.getElementById('btnToggleMobileTools');
+    if (btnTools) {
+      btnTools.classList.toggle('active', nextTools);
+      btnTools.setAttribute('aria-expanded', String(nextTools));
+    }
+  };
+
+  const btnInsights = document.getElementById('btnToggleInsights');
+  if (btnInsights) {
+    btnInsights.addEventListener('click', () => setScheduleDrawer('insights'));
+  }
+
   const btnMobileTools = document.getElementById('btnToggleMobileTools');
   if (btnMobileTools) {
-    btnMobileTools.addEventListener('click', () => {
-      state.mobileToolsOpen = !state.mobileToolsOpen;
-      const card = document.getElementById('scheduleSectionCard');
-      if (card) card.classList.toggle('mobile-tools-open', state.mobileToolsOpen);
-      btnMobileTools.classList.toggle('active', state.mobileToolsOpen);
-      btnMobileTools.setAttribute('aria-expanded', String(state.mobileToolsOpen));
-    });
+    btnMobileTools.addEventListener('click', () => setScheduleDrawer('tools'));
   }
 
   document.querySelectorAll('.mobile-nav-item[data-tab]').forEach(btn => {
