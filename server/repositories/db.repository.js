@@ -13,9 +13,11 @@ const DATA_DIR = path.dirname(DB_FILE);
 const SUPABASE_BUCKET = 'freetime-data';
 const SUPABASE_OBJECT = 'db.json';
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+} catch (_) {}
 
 function hasSupabaseConfig() {
   return Boolean(config.supabase && config.supabase.url && config.supabase.secretKey);
@@ -167,6 +169,7 @@ let supabaseUsersTableReady = null;
 let storageBucketChecked = false;
 let cloudInitialized = false;
 let cloudInitPromise = null;
+let lastCloudSyncAt = 0;
 
 function ensureDbShape(obj) {
   if (!obj || typeof obj !== 'object') return { users: {}, rooms: {} };
@@ -475,9 +478,13 @@ async function syncToSupabaseStorage(payloadStr) {
   }
 }
 
-// Ensure data is loaded from Supabase on startup (and pushed if Supabase is empty)
+// Ensure data is loaded from Supabase on startup (and refreshed across stateless serverless calls)
 async function ensureCloudLoaded() {
-  if (cloudInitialized || !hasSupabaseConfig()) return;
+  if (!hasSupabaseConfig()) return;
+  const isServerless = Boolean(process.env.VERCEL);
+  if (cloudInitialized && (!isServerless || Date.now() - lastCloudSyncAt < 1500)) {
+    return;
+  }
   if (cloudInitPromise) return cloudInitPromise;
 
   cloudInitPromise = (async () => {
@@ -487,7 +494,7 @@ async function ensureCloudLoaded() {
         const sqlData = await loadFromSupabaseSql();
         if (sqlData && Object.keys(sqlData.rooms).length > 0) {
           db = ensureDbShape(sqlData);
-        } else {
+        } else if (!cloudInitialized) {
           for (const u of Object.values(db.users || {})) {
             await syncUserToSupabaseSql(u);
           }
@@ -499,15 +506,17 @@ async function ensureCloudLoaded() {
         const cloudData = await loadFromSupabaseStorage();
         if (cloudData && Object.keys(cloudData.rooms).length > 0) {
           db = ensureDbShape(cloudData);
-        } else {
+        } else if (!cloudInitialized) {
           await syncToSupabaseStorage(JSON.stringify(db, null, 2));
         }
       }
+      lastCloudSyncAt = Date.now();
       await writeLocalMirror(JSON.stringify(db, null, 2));
     } catch (err) {
       console.error('Supabase initial sync warning:', err.message);
     } finally {
       cloudInitialized = true;
+      cloudInitPromise = null;
     }
   })();
 
@@ -553,6 +562,7 @@ function persistDB(changedRoomCode = null, changedUserId = null) {
         } else {
           await syncToSupabaseStorage(payload);
         }
+        lastCloudSyncAt = Date.now();
       }
     })
     .catch((err) => {

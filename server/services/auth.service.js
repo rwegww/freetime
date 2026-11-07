@@ -6,6 +6,7 @@ const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 function getSigningKey() {
   const rawSecret =
     process.env.AUTH_SECRET ||
+    process.env.JWT_SECRET ||
     (config.supabase && config.supabase.secretKey) ||
     'freetime-sync-local-auth-secret-2026';
   return crypto.createHash('sha256').update(rawSecret).digest();

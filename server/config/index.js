@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
 // Simple .env loader without external dependency
@@ -24,11 +25,15 @@ const isTestEnv =
   process.env.DISABLE_SUPABASE === '1' ||
   Boolean(process.env.NODE_TEST_CONTEXT);
 
+const isServerless = Boolean(process.env.VERCEL);
+
 const config = {
   port: parseInt(process.env.PORT || '3000', 10),
-  dbPath: process.env.DB_PATH
+  dbPath: process.env.DB_PATH && !isServerless
     ? path.resolve(process.cwd(), process.env.DB_PATH)
-    : path.resolve(__dirname, isTestEnv ? '../../data/test-db.json' : '../../data/db.json'),
+    : isServerless
+      ? path.join(os.tmpdir(), 'freetime-db.json')
+      : path.resolve(__dirname, isTestEnv ? '../../data/test-db.json' : '../../data/db.json'),
   supabase: {
     url: isTestEnv ? '' : (process.env.SUPABASE_URL || '').replace(/\/+$/, ''),
     publishableKey: isTestEnv ? '' : (process.env.SUPABASE_PUBLISHABLE_KEY || ''),

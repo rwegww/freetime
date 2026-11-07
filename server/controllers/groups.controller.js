@@ -1,7 +1,35 @@
 const dbRepo = require('../repositories/db.repository');
-const { buildSystemMessage } = require('../services/proposal.service');
+const { buildSystemMessage, buildMemberMessage, toggleProposalVote } = require('../services/proposal.service');
+const { sanitizeScheduleData, enforceNoPastScheduleChanges } = require('../services/availability.service');
 const { normalizeRoomCode, isValidRoomCode } = require('../utils/roomCode');
 const { getOnlineMemberIds, getIo } = require('../sockets');
+
+const restHeartbeats = {}; // { [roomCode]: { [memberId]: timestampMs } }
+const HEARTBEAT_TTL_MS = 30000;
+
+function touchMemberHeartbeat(roomCode, memberId) {
+  if (!roomCode || !memberId) return;
+  const code = normalizeRoomCode(roomCode);
+  if (!restHeartbeats[code]) restHeartbeats[code] = {};
+  restHeartbeats[code][memberId] = Date.now();
+}
+
+function getCombinedOnlineMemberIds(roomCode) {
+  const code = normalizeRoomCode(roomCode);
+  const set = new Set(getOnlineMemberIds(code));
+  const map = restHeartbeats[code];
+  if (map) {
+    const now = Date.now();
+    for (const [mId, ts] of Object.entries(map)) {
+      if (now - ts <= HEARTBEAT_TTL_MS) {
+        set.add(mId);
+      } else {
+        delete map[mId];
+      }
+    }
+  }
+  return Array.from(set);
+}
 
 function formatRoomSummary(room, userId) {
   const myMember = room.members.find(m => m.userId === userId);
@@ -10,7 +38,7 @@ function formatRoomSummary(room, userId) {
     name: room.name,
     description: room.description,
     memberCount: room.members.length,
-    onlineCount: getOnlineMemberIds(room.code).length,
+    onlineCount: getCombinedOnlineMemberIds(room.code).length,
     myMemberId: myMember ? myMember.id : null
   };
 }
@@ -122,11 +150,130 @@ async function getGroupByCode(req, res, next) {
       });
     }
 
+    touchMemberHeartbeat(cleanCode, myMember.id);
+
     res.json({
       room,
       member: myMember,
-      onlineMemberIds: getOnlineMemberIds(cleanCode)
+      onlineMemberIds: getCombinedOnlineMemberIds(cleanCode)
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function updateMyGroupSchedule(req, res, next) {
+  try {
+    const cleanCode = normalizeRoomCode(req.params.code);
+    const { weekKey, schedule } = req.body || {};
+    if (!weekKey) {
+      return res.status(400).json({ error: 'Thiếu thông tin tuần (weekKey).' });
+    }
+
+    const room = await dbRepo.getRoom(cleanCode);
+    if (!room) {
+      return res.status(404).json({ error: `Nhóm #${cleanCode} không tồn tại.` });
+    }
+
+    const myMember = room.members.find(m => m.userId === req.user.id);
+    if (!myMember) {
+      return res.status(403).json({ error: 'Bạn chưa tham gia nhóm này.' });
+    }
+
+    touchMemberHeartbeat(cleanCode, myMember.id);
+    const existingSchedule = await dbRepo.getSchedule(cleanCode, myMember.id, weekKey);
+    const cleaned = enforceNoPastScheduleChanges(
+      existingSchedule,
+      sanitizeScheduleData(schedule),
+      weekKey
+    );
+
+    const result = await dbRepo.saveSchedule(cleanCode, myMember.id, weekKey, cleaned);
+    const io = getIo();
+    if (io) {
+      io.to(cleanCode).emit('schedule_updated', {
+        memberId: myMember.id,
+        memberName: myMember.name,
+        weekKey,
+        schedule: result.schedule,
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    res.json({
+      memberId: myMember.id,
+      memberName: myMember.name,
+      weekKey,
+      schedule: result.schedule
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function postGroupMessage(req, res, next) {
+  try {
+    const cleanCode = normalizeRoomCode(req.params.code);
+    const { text, type, proposal } = req.body || {};
+
+    const room = await dbRepo.getRoom(cleanCode);
+    if (!room) {
+      return res.status(404).json({ error: `Nhóm #${cleanCode} không tồn tại.` });
+    }
+
+    const myMember = room.members.find(m => m.userId === req.user.id);
+    if (!myMember) {
+      return res.status(403).json({ error: 'Bạn chưa tham gia nhóm này.' });
+    }
+
+    touchMemberHeartbeat(cleanCode, myMember.id);
+    const message = buildMemberMessage({ member: myMember, text, type, proposal });
+    if (!message) {
+      return res.status(400).json({ error: 'Nội dung tin nhắn không hợp lệ.' });
+    }
+
+    await dbRepo.addMessage(cleanCode, message);
+    const io = getIo();
+    if (io) {
+      io.to(cleanCode).emit('new_message', message);
+    }
+
+    res.status(201).json({ message });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function voteGroupProposal(req, res, next) {
+  try {
+    const cleanCode = normalizeRoomCode(req.params.code);
+    const { messageId } = req.params;
+    const { vote } = req.body || {};
+
+    const room = await dbRepo.getRoom(cleanCode);
+    if (!room) {
+      return res.status(404).json({ error: `Nhóm #${cleanCode} không tồn tại.` });
+    }
+
+    const myMember = room.members.find(m => m.userId === req.user.id);
+    if (!myMember) {
+      return res.status(403).json({ error: 'Bạn chưa tham gia nhóm này.' });
+    }
+
+    touchMemberHeartbeat(cleanCode, myMember.id);
+    const updatedMsg = await dbRepo.updateProposalVote(cleanCode, messageId, myMember.id, (currentVotes) =>
+      toggleProposalVote(currentVotes, myMember.id, vote)
+    );
+    if (!updatedMsg) {
+      return res.status(404).json({ error: 'Không tìm thấy đề xuất lịch hẹn.' });
+    }
+
+    const io = getIo();
+    if (io) {
+      io.to(cleanCode).emit('message_updated', updatedMsg);
+    }
+
+    res.json({ message: updatedMsg });
   } catch (err) {
     next(err);
   }
@@ -136,5 +283,8 @@ module.exports = {
   listMyGroups,
   createGroup,
   joinGroup,
-  getGroupByCode
+  getGroupByCode,
+  updateMyGroupSchedule,
+  postGroupMessage,
+  voteGroupProposal
 };

@@ -313,4 +313,76 @@ describe('Auth, Groups & Shared Group Chat Integration Tests', () => {
       clientOutsider.close();
     }
   });
+
+  it('Hỗ trợ chế độ Serverless (Vercel): REST lưu lịch, nhắn tin & bình chọn không cần WebSocket', async () => {
+    const serverlessApp = require('../api/index');
+    const slServer = http.createServer(serverlessApp);
+    await new Promise(r => slServer.listen(0, r));
+    const slUrl = `http://localhost:${slServer.address().port}`;
+
+    try {
+      const resShim = await fetch(`${slUrl}/socket.io/socket.io.js`);
+      assert.equal(resShim.status, 200);
+      const shimJs = await resShim.text();
+      assert.ok(shimJs.includes('__FREETIME_SERVERLESS__'));
+
+      // REST schedule update on future week
+      const resSched = await fetch(`${slUrl}/api/groups/${groupCode}/schedule`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user1Token}`
+        },
+        body: JSON.stringify({
+          weekKey: '2099-01-05',
+          schedule: { '0-9': { status: 'busy', note: 'Ca sáng Serverless' } }
+        })
+      });
+      assert.equal(resSched.status, 200);
+      const schedBody = await resSched.json();
+      assert.equal(schedBody.schedule['0-9'].note, 'Ca sáng Serverless');
+
+      // REST send proposal message
+      const resMsg = await fetch(`${slUrl}/api/groups/${groupCode}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user1Token}`
+        },
+        body: JSON.stringify({
+          type: 'proposal',
+          text: 'Đề xuất họp Vercel',
+          proposal: {
+            title: 'Review Deploy',
+            dayIndex: 0,
+            dayName: 'Thứ 2',
+            startHour: 9,
+            endHour: 10,
+            weekKey: '2099-01-05',
+            votes: { [member1.id]: 'yes' }
+          }
+        })
+      });
+      assert.equal(resMsg.status, 201);
+      const { message } = await resMsg.json();
+
+      // REST vote proposal by User 2
+      const resVote = await fetch(
+        `${slUrl}/api/groups/${groupCode}/messages/${message.id}/vote`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${user2Token}`
+          },
+          body: JSON.stringify({ vote: 'yes' })
+        }
+      );
+      assert.equal(resVote.status, 200);
+      const voted = await resVote.json();
+      assert.equal(voted.message.proposal.votes[member2.id], 'yes');
+    } finally {
+      await new Promise(r => slServer.close(r));
+    }
+  });
 });
