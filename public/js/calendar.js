@@ -228,9 +228,13 @@ export function renderUnifiedScheduleSection() {
 
   const calendarHint = document.getElementById('calendarHint');
   if (calendarHint) {
-    calendarHint.innerHTML = isPersonalScope
-      ? '👆 Chạm vào ô ca để đánh dấu <strong>bận</strong>, chạm lại để rảnh'
-      : '👆 Chạm vào ô của <strong>bạn</strong> để tick rảnh/bận · Nhấn <strong>Chốt hẹn</strong> khi nhóm cùng rảnh';
+    if (isPersonalScope) {
+      calendarHint.style.display = '';
+      calendarHint.innerHTML = '👆 Chạm vào ô ca để đánh dấu <strong>bận</strong>, chạm lại để rảnh';
+    } else {
+      calendarHint.style.display = 'none';
+      calendarHint.innerHTML = '';
+    }
   }
 
   const legendItemsGroup = document.getElementById('legendItemsGroup');
