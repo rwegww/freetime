@@ -590,5 +590,54 @@ describe('Auth, Groups & Shared Group Chat Integration Tests', () => {
     assert.equal(joinedAfterLeave.isNew, true);
     assert.equal(joinedAfterLeave.room.code, groupCode);
     assert.equal(joinedAfterLeave.room.members.length, 3);
+
+    // Empty group left by last member is automatically cleaned up
+    const resCheckOrphan = await fetch(`${baseUrl}/api/auth/invite/${outsiderGroup.code}`);
+    const orphanBody = await resCheckOrphan.json();
+    assert.equal(orphanBody.found, false);
+  });
+
+  it('Nhập khoảng giờ bận cho nhiều ngày liên tiếp (vắt qua nhiều tuần) lưu nguyên tử qua REST & Socket', async () => {
+    // Future weeks so enforceNoPastScheduleChanges keeps all days
+    const futureWeek1 = '2030-01-07'; // Monday
+    const futureWeek2 = '2030-01-14'; // Next Monday
+
+    const resBatch = await fetch(`${baseUrl}/api/groups/${groupCode}/schedule`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user1Token}`
+      },
+      body: JSON.stringify({
+        weeks: {
+          [futureWeek1]: {
+            '5-8': { status: 'busy', note: 'Đi công tác' },
+            '5-9': { status: 'busy', note: 'Đi công tác' },
+            '6-8': { status: 'busy', note: 'Đi công tác' },
+            '6-9': { status: 'busy', note: 'Đi công tác' }
+          },
+          [futureWeek2]: {
+            '0-8': { status: 'busy', note: 'Đi công tác' },
+            '0-9': { status: 'busy', note: 'Đi công tác' },
+            '1-8': { status: 'busy', note: 'Đi công tác' },
+            '1-9': { status: 'busy', note: 'Đi công tác' }
+          }
+        }
+      })
+    });
+    assert.equal(resBatch.status, 200);
+    const batchBody = await resBatch.json();
+    assert.equal(batchBody.memberId, member1.id);
+    assert.equal(batchBody.weeks[futureWeek1]['5-8'].note, 'Đi công tác');
+    assert.equal(batchBody.weeks[futureWeek2]['1-9'].note, 'Đi công tác');
+
+    // Verify persisted room state has both weeks intact
+    const resGroup = await fetch(`${baseUrl}/api/groups/${groupCode}`, {
+      headers: { Authorization: `Bearer ${user2Token}` }
+    });
+    assert.equal(resGroup.status, 200);
+    const groupData = await resGroup.json();
+    assert.equal(groupData.room.schedules[futureWeek1][member1.id]['6-9'].status, 'busy');
+    assert.equal(groupData.room.schedules[futureWeek2][member1.id]['0-8'].status, 'busy');
   });
 });

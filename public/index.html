@@ -41,11 +41,11 @@
       <!-- Thẻ tài khoản đã nhớ cho lần vào tiếp theo (hiện khi người dùng từng đăng xuất) -->
       <div class="saved-account-card hidden" id="savedAccountCard">
         <button type="button" class="saved-account-main" id="btnUseSavedAccount" title="Tiếp tục với tài khoản đã lưu">
-          <span class="avatar-circle" id="savedAccountAvatar">TV</span>
+          <span class="avatar-circle" id="savedAccountAvatar"></span>
           <div class="saved-account-copy">
             <span class="saved-account-tag">Đã nhớ từ lần trước</span>
-            <strong id="savedAccountName">Người dùng</strong>
-            <small id="savedAccountUsername">@username</small>
+            <strong id="savedAccountName"></strong>
+            <small id="savedAccountUsername"></small>
           </div>
           <span class="saved-account-arrow" aria-hidden="true">→</span>
         </button>
@@ -80,7 +80,7 @@
             <span class="input-leading-icon" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </span>
-            <input type="text" id="loginUsername" name="username" class="modal-input with-leading-icon" placeholder="VD: 0912345678 hoặc tuankiet" autocomplete="username" required />
+            <input type="text" id="loginUsername" name="username" class="modal-input with-leading-icon" placeholder="Nhập số điện thoại, email hoặc tên đăng nhập" autocomplete="username" required />
           </div>
         </div>
         <div class="form-row">
@@ -114,7 +114,7 @@
             <span class="input-leading-icon" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </span>
-            <input type="text" id="regName" name="name" class="modal-input with-leading-icon" placeholder="VD: Cô Lan, Tuấn Kiệt..." autocomplete="name" required />
+            <input type="text" id="regName" name="name" class="modal-input with-leading-icon" placeholder="Nhập tên của bạn" autocomplete="name" required />
           </div>
         </div>
         <div class="form-row">
@@ -123,7 +123,7 @@
             <span class="input-leading-icon" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg>
             </span>
-            <input type="text" id="regUsername" name="username" class="modal-input with-leading-icon" placeholder="VD: 0912345678 hoặc tuankiet" autocomplete="username" required />
+            <input type="text" id="regUsername" name="username" class="modal-input with-leading-icon" placeholder="Nhập số điện thoại hoặc tên viết liền" autocomplete="username" required />
           </div>
           <div class="username-helper-row hidden" id="regUsernameHelper"></div>
         </div>
@@ -157,10 +157,10 @@
     <div class="onboarding-container">
       <div class="onboarding-topbar">
         <div class="onboarding-user-greet">
-          <span class="avatar-circle" id="onboardingUserAvatar">TK</span>
+          <span class="avatar-circle" id="onboardingUserAvatar"></span>
           <div>
             <strong id="onboardingUserName">Xin chào!</strong>
-            <span id="onboardingUserUsername">@username</span>
+            <span id="onboardingUserUsername"></span>
           </div>
         </div>
         <button type="button" class="btn-danger-outline" id="btnOnboardingLogout">Đăng xuất</button>
@@ -274,8 +274,8 @@
 
       <div class="room-badge-group">
         <button id="btnOpenRoomModal" class="room-pill" title="Xem thông tin nhóm hiện tại, link mời hoặc rời nhóm">
-          <span class="room-code-tag" id="headerRoomCode">TEAM01</span>
-          <span class="room-name-text" id="headerRoomName">Nhóm Dự Án & Vận Hành</span>
+          <span class="room-code-tag" id="headerRoomCode"></span>
+          <span class="room-name-text" id="headerRoomName">Nhóm của bạn</span>
           <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
         </button>
         <button id="btnCopyRoomLink" class="btn-ghost btn-invite" title="Lấy link chia sẻ nhóm để gửi qua Zalo, Messenger" aria-label="Chia sẻ link nhóm">
@@ -309,10 +309,10 @@
         <span class="cloud-help-label">Hướng dẫn</span>
       </button>
       <button id="btnOpenMemberModal" class="user-profile-btn" title="Hồ sơ tài khoản & Đăng xuất">
-        <span class="avatar-circle" id="activeUserAvatar">MA</span>
+        <span class="avatar-circle" id="activeUserAvatar"></span>
         <div class="user-info-text">
           <strong id="activeUserName">Tài khoản</strong>
-          <small id="activeUserRole">Hồ sơ • Tài khoản</small>
+          <small id="activeUserRole"></small>
         </div>
         <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
       </button>
@@ -336,11 +336,18 @@
             </button>
             <button id="btnModeInspect" class="mode-pill" data-mode="inspect" title="Chạm vào ô bất kỳ để xem chi tiết & đề xuất giờ hẹn">
               <span class="dot dot-inspect"></span>
-              <span>Chi tiết</span>
+              <span class="mode-label-full">Chi tiết</span>
+              <span class="mode-label-short">Xem</span>
             </button>
           </div>
 
           <div class="toolbar-quick-actions">
+            <button type="button" id="btnOpenBusyRangeModal" class="btn-busy-range" title="Nhập hẳn khoảng giờ bận của 1 ngày hoặc nhiều ngày liên tiếp">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              <span class="range-label-full">Nhập giờ bận</span>
+              <span class="range-label-short">Nhập bận</span>
+            </button>
+
             <button type="button" id="btnToggleInsights" class="btn-insights-toggle" aria-expanded="false" title="Xem gợi ý khung giờ cả nhóm cùng rảnh">
               <span class="dot dot-free"></span>
               <span id="statAllFreeHours">0h rảnh</span>
@@ -370,6 +377,7 @@
         <div class="toolbar-collapsible" id="toolbarCollapsible">
           <div class="preset-group">
             <span class="toolbar-label">Nhanh T2–T6</span>
+            <button type="button" class="btn-preset" id="btnOpenBusyRangeFromDrawer" title="Nhập khoảng giờ bận cho 1 ngày hoặc nhiều ngày liên tiếp">📅 Chọn ngày &amp; giờ...</button>
             <button class="btn-preset" data-preset="office" title="8h-12h & 13h-17h">Hành chính</button>
             <button class="btn-preset" data-preset="morning" title="8h-12h">Sáng</button>
             <button class="btn-preset" data-preset="afternoon" title="13h-17h">Chiều</button>
@@ -387,9 +395,9 @@
                 type="text"
                 id="busyNoteInput"
                 class="input-compact"
-                placeholder="Ghi chú ca làm (VD: Ca sáng, Họp...)"
-                value="Ca làm việc"
-                aria-label="Ghi chú ca làm"
+                placeholder="Ghi chú giờ bận (tùy chọn)..."
+                value=""
+                aria-label="Ghi chú giờ bận"
               />
             </div>
 
@@ -507,7 +515,7 @@
       <div class="modal-header">
         <div>
           <span class="modal-tag">Chi tiết khung giờ</span>
-          <h3 id="slotModalTitle">Thứ 6 • 14:00 - 15:00</h3>
+          <h3 id="slotModalTitle">Chi tiết khung giờ</h3>
         </div>
         <button class="modal-close-btn" data-close="slotDetailModal" aria-label="Đóng">&times;</button>
       </div>
@@ -529,7 +537,7 @@
           <h4>Gửi đề xuất giờ hẹn vào cuộc trò chuyện nhóm</h4>
           <div class="form-row">
             <label for="slotProposeTitle">Nội dung buổi hẹn</label>
-            <input type="text" id="slotProposeTitle" class="modal-input" value="Họp nhóm / Trao đổi công việc" />
+            <input type="text" id="slotProposeTitle" class="modal-input" placeholder="Nhập nội dung buổi hẹn (tùy chọn)..." value="" />
           </div>
           <div class="form-row-inline">
             <div>
@@ -551,6 +559,109 @@
     </div>
   </div>
 
+  <!-- MODAL 7: Nhập khoảng giờ bận (1 ngày xác định hoặc nhiều ngày liên tiếp) -->
+  <div id="busyRangeModal" class="modal-backdrop hidden">
+    <div class="modal-card busy-range-modal-card">
+      <div class="modal-sheet-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <div>
+          <span class="modal-tag">Đăng ký nhanh không cần chấm ô</span>
+          <h3>Nhập khoảng giờ bận của bạn</h3>
+        </div>
+        <button class="modal-close-btn" data-close="busyRangeModal" aria-label="Đóng">&times;</button>
+      </div>
+
+      <div class="modal-body busy-range-body">
+        <!-- Bước 1: Chọn kiểu 1 ngày hay nhiều ngày liên tiếp -->
+        <div class="busy-range-mode-tabs" role="tablist" aria-label="Kiểu chọn ngày bận">
+          <button type="button" id="btnRangeModeSingle" class="busy-mode-tab active" data-range-mode="single" role="tab" aria-selected="true">
+            <span class="busy-tab-icon" aria-hidden="true">📅</span>
+            <div>
+              <strong>1 ngày xác định</strong>
+              <small>Chọn đúng 1 ngày bạn bận</small>
+            </div>
+          </button>
+          <button type="button" id="btnRangeModeMulti" class="busy-mode-tab" data-range-mode="multi" role="tab" aria-selected="false">
+            <span class="busy-tab-icon" aria-hidden="true">📆</span>
+            <div>
+              <strong>Nhiều ngày liên tiếp</strong>
+              <small>Từ ngày bắt đầu đến ngày kết thúc</small>
+            </div>
+          </button>
+        </div>
+
+        <!-- Gợi ý chọn nhanh ngày / chuỗi ngày -->
+        <div class="busy-quick-row">
+          <span class="busy-section-label" id="busyQuickDaysLabel">Chọn nhanh ngày trong tuần</span>
+          <div id="busyRangeQuickDays" class="busy-quick-chips"></div>
+        </div>
+
+        <!-- Bước 2: Chọn ngày hoặc khoảng ngày -->
+        <div class="busy-date-inputs-grid" id="busyDateInputsGrid" data-mode="single">
+          <div class="form-row">
+            <label for="busyStartDate" id="busyStartDateLabel">Ngày bạn bận</label>
+            <input type="date" id="busyStartDate" class="modal-input" required />
+          </div>
+          <div class="form-row hidden" id="busyEndDateWrap">
+            <label for="busyEndDate">Đến hết ngày</label>
+            <input type="date" id="busyEndDate" class="modal-input" />
+          </div>
+        </div>
+
+        <!-- Bước 3: Chọn khoảng giờ bận trong ngày -->
+        <div class="busy-time-box">
+          <div class="busy-time-head">
+            <span class="busy-section-label">Khoảng giờ bận trong ngày</span>
+          </div>
+
+          <div class="busy-quick-chips" id="busyQuickHourChips" aria-label="Chọn nhanh ca giờ">
+            <button type="button" class="busy-chip" data-quick-hours="8-12">Sáng 08h–12h</button>
+            <button type="button" class="busy-chip" data-quick-hours="13-17">Chiều 13h–17h</button>
+            <button type="button" class="busy-chip active" data-quick-hours="8-17">Cả ca 08h–17h</button>
+            <button type="button" class="busy-chip" data-quick-hours="18-21">Tối 18h–21h</button>
+            <button type="button" class="busy-chip" data-quick-hours="7-22">Cả ngày 07h–22h</button>
+          </div>
+
+          <div class="form-row-inline busy-hour-select-row">
+            <div>
+              <label for="busyRangeStartHour">Từ giờ</label>
+              <select id="busyRangeStartHour" class="modal-select"></select>
+            </div>
+            <div class="busy-hour-arrow" aria-hidden="true">→</div>
+            <div>
+              <label for="busyRangeEndHour">Đến giờ</label>
+              <select id="busyRangeEndHour" class="modal-select"></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bước 4: Ghi chú tùy chọn -->
+        <div class="form-row">
+          <label for="busyRangeNote">Ghi chú (tùy chọn)</label>
+          <input
+            type="text"
+            id="busyRangeNote"
+            class="modal-input"
+            placeholder="VD: Đi làm, Bận học, Công tác... (để trống = Bận)"
+            maxlength="60"
+          />
+        </div>
+
+        <!-- Khung tóm tắt trực quan trước khi lưu -->
+        <div class="busy-range-preview" id="busyRangePreviewBanner" aria-live="polite"></div>
+      </div>
+
+      <div class="modal-footer busy-range-footer">
+        <button type="button" id="btnClearBusyRange" class="btn-secondary" title="Xóa trạng thái bận trong khoảng ngày và giờ đã chọn">
+          Đặt lại Rảnh
+        </button>
+        <button type="button" id="btnApplyBusyRange" class="btn-primary">
+          Lưu giờ bận
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL 2: Tài khoản cá nhân & Thành viên trong nhóm -->
   <div id="memberModal" class="modal-backdrop hidden">
     <div class="modal-card">
@@ -565,10 +676,10 @@
       <div class="modal-body">
         <div class="account-summary-box">
           <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-            <span class="avatar-circle" id="modalProfileAvatar">MA</span>
+            <span class="avatar-circle" id="modalProfileAvatar"></span>
             <div style="min-width:0;">
               <strong id="modalProfileName" style="display:block;font-size:13.5px;">Tài khoản</strong>
-              <small id="accountUsernameDisplay" style="color:var(--text-muted);font-size:11.5px;">@username</small>
+              <small id="accountUsernameDisplay" style="color:var(--text-muted);font-size:11.5px;"></small>
             </div>
           </div>
           <button type="button" class="btn-danger-outline" id="btnLogout">Đăng xuất</button>
@@ -603,10 +714,10 @@
         <!-- Thẻ nhóm hiện tại -->
         <div class="current-single-group-box">
           <div class="current-single-group-info">
-            <strong id="modalCurrentGroupName">Nhóm Của Bạn</strong>
-            <span id="modalCurrentGroupMeta">1 thành viên</span>
+            <strong id="modalCurrentGroupName">Nhóm của bạn</strong>
+            <span id="modalCurrentGroupMeta"></span>
           </div>
-          <span class="invite-code-big" id="currentInviteCodeDisplay">#TEAM01</span>
+          <span class="invite-code-big" id="currentInviteCodeDisplay"></span>
         </div>
 
         <!-- Hộp Link Chia Sẻ Nhóm -->
@@ -665,8 +776,8 @@
         </p>
 
         <div class="created-ticket-box">
-          <div class="created-group-title" id="createdGroupNameDisplay">Nhóm Của Bạn</div>
-          <div class="created-code-giant" id="createdGroupCodeBig">FT8K2M</div>
+          <div class="created-group-title" id="createdGroupNameDisplay">Nhóm của bạn</div>
+          <div class="created-code-giant" id="createdGroupCodeBig"></div>
         </div>
 
         <div class="share-link-field-wrap">
@@ -707,10 +818,10 @@
       </div>
       <div class="modal-body">
         <p class="modal-desc" style="line-height: 1.55;">
-          Mỗi người chỉ được tham gia <strong>1 nhóm duy nhất</strong>. Tài khoản của bạn hiện đang ở nhóm <strong id="conflictCurrentGroupLabel">#TEAM01</strong>.
+          Mỗi người chỉ được tham gia <strong>1 nhóm duy nhất</strong>. Tài khoản của bạn hiện đang ở nhóm <strong id="conflictCurrentGroupLabel">hiện tại</strong>.
         </p>
         <div class="oauth-guide-box">
-          <strong>Bạn vừa mở link mời của nhóm <span id="conflictTargetGroupLabel">#FT8K2M</span></strong>
+          <strong>Bạn vừa mở link mời của nhóm <span id="conflictTargetGroupLabel">mới</span></strong>
           <p>Nếu muốn chuyển sang nhóm mới này, hệ thống sẽ giúp bạn rời khỏi nhóm cũ trước.</p>
         </div>
       </div>

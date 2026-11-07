@@ -52,6 +52,38 @@
   flex-shrink: 0;
 }
 
+.mode-label-short,
+.range-label-short {
+  display: none;
+}
+
+.btn-busy-range {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px -1px rgba(79, 70, 229, 0.38);
+  transition: background 0.15s, transform 0.12s;
+}
+
+.btn-busy-range:hover {
+  background: var(--primary-hover);
+}
+
+.btn-busy-range:active {
+  transform: scale(0.98);
+}
+
 .btn-insights-toggle {
   display: inline-flex;
   align-items: center;
@@ -949,6 +981,207 @@
   color: #3730a3;
 }
 
+/* ==================== MODAL NHẬP KHOẢNG GIỜ BẬN (1 NGÀY / NHIỀU NGÀY) ==================== */
+.busy-range-modal-card {
+  max-width: 520px;
+}
+
+.busy-range-body {
+  gap: 11px;
+}
+
+.busy-range-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.busy-mode-tab {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  min-width: 0;
+}
+
+.busy-mode-tab:hover {
+  border-color: #c7d2fe;
+  background: #fff;
+}
+
+.busy-mode-tab.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--text-main);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.12);
+}
+
+.busy-tab-icon {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.busy-mode-tab strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.25;
+}
+
+.busy-mode-tab small {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+  line-height: 1.25;
+}
+
+.busy-section-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+
+.busy-quick-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.busy-quick-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.busy-quick-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.busy-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: #fff;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.busy-chip:hover:not(:disabled) {
+  border-color: #c7d2fe;
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.busy-chip.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.busy-chip:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  background: var(--bg-muted);
+}
+
+.busy-date-inputs-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.busy-date-inputs-grid[data-mode="multi"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.busy-date-inputs-grid input[type="date"] {
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.busy-time-box {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 10px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.busy-time-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.busy-time-head .busy-section-label {
+  margin-bottom: 0;
+}
+
+.busy-hour-select-row {
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.busy-hour-select-row .busy-hour-arrow {
+  flex: 0 0 auto;
+  padding-bottom: 9px;
+  color: var(--text-muted);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.busy-range-preview {
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #312e81;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.busy-range-preview strong {
+  font-weight: 700;
+  color: #1e1b4b;
+}
+
+.busy-range-preview.is-error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.busy-range-footer {
+  justify-content: space-between;
+}
+
 /* ==================== CALENDAR RESPONSIVE ==================== */
 @media (max-width: 768px) {
   .day-full { display: none; }
@@ -983,19 +1216,34 @@
   }
 
   .toolbar-quick-actions {
-    gap: 5px;
+    gap: 4px;
+  }
+
+  .range-label-full {
+    display: none;
+  }
+
+  .range-label-short {
+    display: inline;
+  }
+
+  .btn-busy-range {
+    height: 32px;
+    padding: 0 9px;
+    font-size: 11.5px;
+    gap: 3px;
   }
 
   .btn-insights-toggle {
     height: 32px;
-    padding: 0 8px;
+    padding: 0 7px;
     font-size: 11.5px;
     gap: 4px;
   }
 
   .btn-mobile-tools {
     height: 32px;
-    width: 34px;
+    width: 32px;
     padding: 0;
   }
 
@@ -1179,6 +1427,29 @@
     height: 24px;
     font-size: 12px;
     margin-left: 4px;
+  }
+}
+
+@media (max-width: 440px) {
+  .mode-label-full {
+    display: none;
+  }
+
+  .mode-label-short {
+    display: inline;
+  }
+
+  .busy-mode-tab {
+    padding: 8px 9px;
+    gap: 6px;
+  }
+
+  .busy-mode-tab small {
+    display: none;
+  }
+
+  .busy-date-inputs-grid input[type="date"] {
+    padding: 8px 7px;
   }
 }
 

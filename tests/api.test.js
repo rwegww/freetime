@@ -34,18 +34,15 @@ describe('REST API & Static Assets Integration Tests', () => {
     }
   });
 
-  it('GET /api/rooms và GET /api/rooms/TEAM01 trả về dữ liệu phòng mẫu', async () => {
+  it('Khởi tạo sạch không có phòng ảo / dữ liệu mẫu dư thừa', async () => {
     const resList = await fetch(`${baseUrl}/api/rooms`);
     assert.equal(resList.status, 200);
     const listData = await resList.json();
     assert.ok(Array.isArray(listData.rooms));
-    assert.ok(listData.rooms.some(r => r.code === 'TEAM01'));
+    assert.equal(listData.rooms.length, 0);
 
     const resTeam = await fetch(`${baseUrl}/api/rooms/TEAM01`);
-    assert.equal(resTeam.status, 200);
-    const teamData = await resTeam.json();
-    assert.equal(teamData.room.code, 'TEAM01');
-    assert.ok(teamData.room.members.length >= 3);
+    assert.equal(resTeam.status, 404);
   });
 
   it('POST /api/rooms và POST /api/rooms/:code/members tạo phòng và thêm thành viên mới', async () => {

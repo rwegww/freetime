@@ -33,132 +33,9 @@ function supabaseHeaders(extra = {}) {
 }
 
 function createInitialSeedData() {
-  const weekKey = getCurrentMondayKey();
-  const m1Schedule = {};
-  const m2Schedule = {};
-  const m3Schedule = {};
-
-  for (let d = 0; d <= 4; d++) {
-    for (let h = 8; h < 12; h++) {
-      m1Schedule[`${d}-${h}`] = { status: 'busy', note: 'Ca sáng tại văn phòng' };
-    }
-  }
-  [0, 2].forEach(d => {
-    for (let h = 13; h < 17; h++) {
-      m1Schedule[`${d}-${h}`] = { status: 'busy', note: 'Trực dự án khách hàng' };
-    }
-  });
-
-  [0, 1, 3].forEach(d => {
-    for (let h = 13; h < 18; h++) {
-      m2Schedule[`${d}-${h}`] = { status: 'busy', note: 'Ca chiều kỹ thuật' };
-    }
-  });
-  [2, 4].forEach(d => {
-    for (let h = 8; h < 12; h++) {
-      m2Schedule[`${d}-${h}`] = { status: 'busy', note: 'Họp & làm việc ca sáng' };
-    }
-  });
-
-  [0, 2].forEach(d => {
-    for (let h = 8; h < 12; h++) m3Schedule[`${d}-${h}`] = { status: 'busy', note: 'Ca sáng' };
-    for (let h = 13; h < 17; h++) m3Schedule[`${d}-${h}`] = { status: 'busy', note: 'Ca chiều' };
-  });
-  for (let h = 8; h < 12; h++) m3Schedule[`1-${h}`] = { status: 'busy', note: 'Ca sáng' };
-  for (let h = 18; h < 21; h++) m3Schedule[`4-${h}`] = { status: 'busy', note: 'Trực ca tối' };
-
   return {
     users: {},
-    rooms: {
-      TEAM01: {
-        code: 'TEAM01',
-        name: 'Nhóm Dự Án & Vận Hành (Demo)',
-        description: 'Báo lịch làm việc hàng tuần để tự động tìm khung giờ trống họp nhóm & trao đổi nhanh.',
-        createdBy: null,
-        createdAt: new Date().toISOString(),
-        workHours: { start: 7, end: 22 },
-        members: [
-          {
-            id: 'mem_1',
-            userId: null,
-            name: 'Minh Anh',
-            role: 'Team Lead',
-            color: '#6366f1',
-            avatar: 'MA',
-            updatedAt: new Date().toISOString()
-          },
-          {
-            id: 'mem_2',
-            userId: null,
-            name: 'Hoàng Nam',
-            role: 'Developer',
-            color: '#10b981',
-            avatar: 'HN',
-            updatedAt: new Date().toISOString()
-          },
-          {
-            id: 'mem_3',
-            userId: null,
-            name: 'Thu Hà',
-            role: 'Designer',
-            color: '#f59e0b',
-            avatar: 'TH',
-            updatedAt: new Date().toISOString()
-          }
-        ],
-        schedules: {
-          [weekKey]: {
-            mem_1: m1Schedule,
-            mem_2: m2Schedule,
-            mem_3: m3Schedule
-          }
-        },
-        messages: [
-          {
-            id: 'msg_1',
-            memberId: 'mem_1',
-            memberName: 'Minh Anh',
-            memberColor: '#6366f1',
-            memberAvatar: 'MA',
-            type: 'text',
-            text: 'Chào mọi người! Mọi người cập nhật lịch làm việc tuần này vào bảng bên trái để hệ thống tự tính giờ trống chung nhé.',
-            createdAt: new Date(Date.now() - 3600000 * 2).toISOString()
-          },
-          {
-            id: 'msg_2',
-            memberId: 'mem_2',
-            memberName: 'Hoàng Nam',
-            memberColor: '#10b981',
-            memberAvatar: 'HN',
-            type: 'text',
-            text: 'Mình vừa điền lịch ca làm của mình rồi nha. Nhìn qua thấy chiều Thứ 6 (13:00 - 18:00) cả 3 đứa đều đang rảnh hoàn toàn!',
-            createdAt: new Date(Date.now() - 3600000).toISOString()
-          },
-          {
-            id: 'msg_3',
-            memberId: 'mem_1',
-            memberName: 'Minh Anh',
-            memberColor: '#6366f1',
-            memberAvatar: 'MA',
-            type: 'proposal',
-            text: 'Đề xuất lịch họp / gặp mặt nhóm vào khung giờ trống chung:',
-            proposal: {
-              title: 'Họp tổng kết Sprint & Phân công việc',
-              dayIndex: 4,
-              dayName: 'Thứ 6',
-              startHour: 14,
-              endHour: 16,
-              weekKey,
-              votes: {
-                mem_1: 'yes',
-                mem_2: 'yes'
-              }
-            },
-            createdAt: new Date(Date.now() - 1800000).toISOString()
-          }
-        ]
-      }
-    }
+    rooms: {}
   };
 }
 
@@ -183,7 +60,7 @@ function loadLocalDBSync() {
     if (fs.existsSync(DB_FILE)) {
       const raw = fs.readFileSync(DB_FILE, 'utf-8');
       const parsed = JSON.parse(raw);
-      if (parsed && parsed.rooms && Object.keys(parsed.rooms).length > 0) {
+      if (parsed && typeof parsed === 'object') {
         db = ensureDbShape(parsed);
         return;
       }
@@ -228,7 +105,7 @@ async function loadFromSupabaseSql() {
 
   if (!roomsRes.ok) return null;
   const roomsRows = await roomsRes.json();
-  if (!Array.isArray(roomsRows) || roomsRows.length === 0) return null;
+  if (!Array.isArray(roomsRows)) return null;
 
   const usersRows = usersRes.ok ? await usersRes.json() : [];
   const membersRows = membersRes.ok ? await membersRes.json() : [];
@@ -492,22 +369,13 @@ async function ensureCloudLoaded() {
       const sqlReady = await checkSupabaseSqlTables();
       if (sqlReady) {
         const sqlData = await loadFromSupabaseSql();
-        if (sqlData && Object.keys(sqlData.rooms).length > 0) {
+        if (sqlData) {
           db = ensureDbShape(sqlData);
-        } else if (!cloudInitialized) {
-          for (const u of Object.values(db.users || {})) {
-            await syncUserToSupabaseSql(u);
-          }
-          for (const room of Object.values(db.rooms)) {
-            await syncRoomToSupabaseSql(room);
-          }
         }
       } else {
         const cloudData = await loadFromSupabaseStorage();
-        if (cloudData && Object.keys(cloudData.rooms).length > 0) {
+        if (cloudData) {
           db = ensureDbShape(cloudData);
-        } else if (!cloudInitialized) {
-          await syncToSupabaseStorage(JSON.stringify(db, null, 2));
         }
       }
       lastCloudSyncAt = Date.now();
@@ -887,23 +755,35 @@ async function leaveGroupForUser(code, user) {
     }
   }
 
+  const isRoomNowEmpty = room.members.length === 0;
+  if (isRoomNowEmpty) {
+    delete db.rooms[cleanCode];
+  }
+
   if (hasSupabaseConfig()) {
     try {
       const sqlReady = await checkSupabaseSqlTables();
       if (sqlReady) {
-        await Promise.all(
-          Array.from(removedIds).map(remId =>
-            fetch(`${config.supabase.url}/rest/v1/members?id=eq.${encodeURIComponent(remId)}`, {
-              method: 'DELETE',
-              headers: supabaseHeaders()
-            }).catch(() => {})
-          )
-        );
+        if (isRoomNowEmpty) {
+          await fetch(`${config.supabase.url}/rest/v1/rooms?code=eq.${encodeURIComponent(cleanCode)}`, {
+            method: 'DELETE',
+            headers: supabaseHeaders()
+          }).catch(() => {});
+        } else {
+          await Promise.all(
+            Array.from(removedIds).map(remId =>
+              fetch(`${config.supabase.url}/rest/v1/members?id=eq.${encodeURIComponent(remId)}`, {
+                method: 'DELETE',
+                headers: supabaseHeaders()
+              }).catch(() => {})
+            )
+          );
+        }
       }
     } catch (_) {}
   }
 
-  await persistDB(cleanCode);
+  await persistDB(isRoomNowEmpty ? null : cleanCode);
   return { room, removedMember: myMembers[0], notMember: false };
 }
 
@@ -1026,6 +906,34 @@ async function saveSchedule(code, memberId, weekKey, data) {
   };
 }
 
+async function saveSchedulesBatch(code, memberId, weeksMap) {
+  await ensureCloudLoaded();
+  const cleanCode = normalizeRoomCode(code);
+  const room = await getRoom(cleanCode);
+  if (!room) return null;
+
+  const savedWeeks = {};
+  for (const [weekKey, data] of Object.entries(weeksMap || {})) {
+    if (!weekKey) continue;
+    if (!room.schedules[weekKey]) {
+      room.schedules[weekKey] = {};
+    }
+    room.schedules[weekKey][memberId] = data || {};
+    savedWeeks[weekKey] = room.schedules[weekKey][memberId];
+  }
+
+  const member = room.members.find(m => m.id === memberId);
+  if (member) {
+    member.updatedAt = new Date().toISOString();
+  }
+
+  await persistDB(cleanCode);
+  return {
+    weeks: savedWeeks,
+    member
+  };
+}
+
 async function addMessage(code, msg) {
   await ensureCloudLoaded();
   const cleanCode = normalizeRoomCode(code);
@@ -1087,6 +995,7 @@ module.exports = {
   upsertMember,
   getSchedule,
   saveSchedule,
+  saveSchedulesBatch,
   addMessage,
   getMessages,
   updateProposalVote,

@@ -3,11 +3,14 @@ import {
   SHORT_DAY_NAMES,
   START_HOUR,
   END_HOUR,
+  getMondayOfDate,
   formatDateKey,
+  parseLocalDateKey,
   formatShortDM,
   addDays,
   formatHourRange,
   openModal,
+  closeModal,
   showToast,
   escapeHtml,
   renderAvatarHtml
@@ -21,10 +24,12 @@ import {
   getFilteredMembers
 } from './state.js';
 import { getSlotAvailability, computeBestFreeBlocks } from './availability.js';
-import { emitUpdateSchedule } from './socket.js';
+import { emitUpdateSchedule, emitUpdateSchedulesBatch } from './socket.js';
 
 let syncDebounce = null;
 let didInitialTodayScroll = false;
+let busyRangeMode = 'single'; // 'single' | 'multi'
+let busyRangeHoursInitialized = false;
 
 export function renderMemberFilterChips() {
   const container = document.getElementById('memberFilterChips');
@@ -171,7 +176,7 @@ export function renderUnifiedScheduleSection() {
   };
   const isSameMyBusyNoteAt = (d, h, noteStr) => {
     const e = mySched[`${d}-${h}`];
-    return Boolean(e && e.status === 'busy' && (e.note || 'Ca làm việc') === noteStr);
+    return Boolean(e && e.status === 'busy' && (e.note || 'Bận') === noteStr);
   };
   const isAllFreeAt = (d, h) => {
     if (h < START_HOUR || isMyBusyAt(d, h)) return false;
@@ -193,7 +198,7 @@ export function renderUnifiedScheduleSection() {
       const isPast = isDayIndexPast(d);
       const myEntry = mySched[key];
       const isMyBusy = myEntry && myEntry.status === 'busy';
-      const myBusyNote = isMyBusy ? (myEntry.note || 'Ca làm việc') : '';
+      const myBusyNote = isMyBusy ? (myEntry.note || 'Bận') : '';
 
       const info = getSlotAvailability(d, h, targetMembers);
       const isAllFree = info.total > 0 && info.freeCount === info.total;
@@ -395,7 +400,7 @@ export function applyPersonalSlotPaint(dayIndex, hour) {
 
   const mySched = state.room.schedules[weekKey][me.id];
   const key = `${dayIndex}-${hour}`;
-  const noteInput = document.getElementById('busyNoteInput').value.trim() || 'Ca làm việc';
+  const noteInput = document.getElementById('busyNoteInput').value.trim() || 'Bận';
 
   if (state.paintMode === 'busy') {
     if (mySched[key] && mySched[key].status === 'busy') {
@@ -546,4 +551,457 @@ export function openSlotInspector(dayIndex, hour, suggestedEndHour = null) {
   }
 
   openModal('slotDetailModal');
+}
+
+// ==================== NHẬP KHOẢNG GIỜ BẬN (1 NGÀY / NHIỀU NGÀY LIÊN TIẾP) ====================
+
+function ensureBusyRangeHourSelects() {
+  const startSel = document.getElementById('busyRangeStartHour');
+  const endSel = document.getElementById('busyRangeEndHour');
+  if (!startSel || !endSel || busyRangeHoursInitialized) return;
+
+  startSel.innerHTML = '';
+  for (let h = START_HOUR; h < END_HOUR; h++) {
+    const opt = document.createElement('option');
+    opt.value = String(h);
+    opt.textContent = `${String(h).padStart(2, '0')}:00`;
+    if (h === 8) opt.selected = true;
+    startSel.appendChild(opt);
+  }
+
+  endSel.innerHTML = '';
+  for (let h = START_HOUR + 1; h <= END_HOUR; h++) {
+    const opt = document.createElement('option');
+    opt.value = String(h);
+    opt.textContent = `${String(h).padStart(2, '0')}:00`;
+    if (h === 17) opt.selected = true;
+    endSel.appendChild(opt);
+  }
+
+  busyRangeHoursInitialized = true;
+}
+
+function syncQuickHourChipsHighlight() {
+  const startSel = document.getElementById('busyRangeStartHour');
+  const endSel = document.getElementById('busyRangeEndHour');
+  if (!startSel || !endSel) return;
+  const sig = `${startSel.value}-${endSel.value}`;
+  document.querySelectorAll('#busyQuickHourChips [data-quick-hours]').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.quickHours === sig);
+  });
+}
+
+function getMondayDayIdx(dateObj) {
+  return (dateObj.getDay() + 6) % 7;
+}
+
+function renderBusyRangeQuickDays() {
+  const container = document.getElementById('busyRangeQuickDays');
+  const labelEl = document.getElementById('busyQuickDaysLabel');
+  const startInput = document.getElementById('busyStartDate');
+  const endInput = document.getElementById('busyEndDate');
+  if (!container || !startInput || !endInput) return;
+
+  container.innerHTML = '';
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = formatDateKey(today);
+
+  if (busyRangeMode === 'single') {
+    const viewingFutureWeek = state.currentWeekMonday && formatDateKey(state.currentWeekMonday) > todayStr;
+    if (labelEl) {
+      labelEl.textContent = viewingFutureWeek ? 'Chọn nhanh ngày trong tuần đang xem' : 'Chọn nhanh 7 ngày tới';
+    }
+    const firstQuickDt = viewingFutureWeek ? state.currentWeekMonday : today;
+    const tomorrowStr = formatDateKey(addDays(today, 1));
+
+    for (let i = 0; i < 7; i++) {
+      const dt = addDays(firstQuickDt, i);
+      const key = formatDateKey(dt);
+      const dayIdx = getMondayDayIdx(dt);
+      const isToday = key === todayStr;
+      const isTomorrow = key === tomorrowStr;
+      const isActive = startInput.value === key;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `busy-chip ${isActive ? 'active' : ''}`;
+      const prefix = isToday ? 'Hôm nay · ' : (isTomorrow ? 'Ngày mai · ' : '');
+      btn.textContent = `${prefix}${SHORT_DAY_NAMES[dayIdx]} ${formatShortDM(dt)}`;
+      btn.addEventListener('click', () => {
+        startInput.value = key;
+        if (!endInput.value || endInput.value < key) {
+          endInput.value = formatDateKey(addDays(dt, 1));
+        }
+        renderBusyRangeQuickDays();
+        updateBusyRangePreview();
+      });
+      container.appendChild(btn);
+    }
+
+    requestAnimationFrame(() => {
+      const activeChip = container.querySelector('.busy-chip.active');
+      if (activeChip) {
+        container.scrollLeft = Math.max(0, activeChip.offsetLeft - 24);
+      }
+    });
+    return;
+  }
+
+  if (labelEl) labelEl.textContent = 'Chọn nhanh chuỗi ngày liên tiếp';
+  const baseStart = parseLocalDateKey(startInput.value) || today;
+  const clampedStart = formatDateKey(baseStart) < todayStr ? today : baseStart;
+  const currentSunday = addDays(getMondayOfDate(today), 6);
+  const nextMonday = addDays(getMondayOfDate(today), 7);
+  const nextFriday = addDays(nextMonday, 4);
+
+  const presets = [
+    { label: '2 ngày liên tiếp', start: clampedStart, end: addDays(clampedStart, 1) },
+    { label: '3 ngày liên tiếp', start: clampedStart, end: addDays(clampedStart, 2) },
+    { label: '5 ngày liên tiếp', start: clampedStart, end: addDays(clampedStart, 4) },
+    { label: '7 ngày liên tiếp', start: clampedStart, end: addDays(clampedStart, 6) }
+  ];
+
+  if (formatDateKey(today) < formatDateKey(currentSunday)) {
+    presets.push({ label: 'Từ nay hết tuần', start: today, end: currentSunday });
+  }
+  presets.push({ label: 'T2–T6 tuần sau', start: nextMonday, end: nextFriday });
+
+  presets.forEach(p => {
+    const sKey = formatDateKey(p.start);
+    const eKey = formatDateKey(p.end);
+    const isActive = startInput.value === sKey && endInput.value === eKey;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `busy-chip ${isActive ? 'active' : ''}`;
+    btn.textContent = p.label;
+    btn.addEventListener('click', () => {
+      startInput.value = sKey;
+      endInput.value = eKey;
+      endInput.min = sKey;
+      renderBusyRangeQuickDays();
+      updateBusyRangePreview();
+    });
+    container.appendChild(btn);
+  });
+}
+
+function validateBusyRangeInputs() {
+  const startInput = document.getElementById('busyStartDate');
+  const endInput = document.getElementById('busyEndDate');
+  const startSel = document.getElementById('busyRangeStartHour');
+  const endSel = document.getElementById('busyRangeEndHour');
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = formatDateKey(today);
+
+  const startDateStr = startInput ? startInput.value : '';
+  const endDateStr = busyRangeMode === 'single' ? startDateStr : (endInput ? endInput.value : '');
+  const startDt = parseLocalDateKey(startDateStr);
+  const endDt = parseLocalDateKey(endDateStr);
+  const startHour = startSel ? parseInt(startSel.value, 10) : 8;
+  const endHour = endSel ? parseInt(endSel.value, 10) : 17;
+
+  if (!startDt || !endDt) {
+    return { valid: false, error: 'Vui lòng chọn đầy đủ ngày bận.' };
+  }
+  if (startDateStr < todayStr) {
+    return { valid: false, error: '🔒 Không thể đăng ký lịch cho ngày đã qua. Hãy chọn từ hôm nay trở đi.' };
+  }
+  if (endDateStr < startDateStr) {
+    return { valid: false, error: 'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.' };
+  }
+  const dayCount = Math.round((endDt.getTime() - startDt.getTime()) / 86400000) + 1;
+  if (dayCount > 60) {
+    return { valid: false, error: 'Mỗi lần chỉ nhập tối đa 60 ngày liên tiếp để tránh nhầm lẫn.' };
+  }
+  if (!(startHour >= START_HOUR && endHour <= END_HOUR && startHour < endHour)) {
+    return { valid: false, error: 'Giờ kết thúc phải lớn hơn giờ bắt đầu.' };
+  }
+
+  return {
+    valid: true,
+    startDt,
+    endDt,
+    startDateStr,
+    endDateStr,
+    dayCount,
+    startHour,
+    endHour,
+    hoursPerDay: endHour - startHour
+  };
+}
+
+function updateBusyRangePreview() {
+  const previewEl = document.getElementById('busyRangePreviewBanner');
+  const applyBtn = document.getElementById('btnApplyBusyRange');
+  const clearBtn = document.getElementById('btnClearBusyRange');
+  if (!previewEl) return;
+
+  const check = validateBusyRangeInputs();
+  if (!check.valid) {
+    previewEl.classList.add('is-error');
+    previewEl.textContent = check.error;
+    if (applyBtn) applyBtn.disabled = true;
+    if (clearBtn) clearBtn.disabled = true;
+    return;
+  }
+
+  previewEl.classList.remove('is-error');
+  if (applyBtn) applyBtn.disabled = false;
+  if (clearBtn) clearBtn.disabled = false;
+
+  const { startDt, endDt, dayCount, startHour, endHour, hoursPerDay } = check;
+  const sDayName = DAY_NAMES[getMondayDayIdx(startDt)];
+  const eDayName = DAY_NAMES[getMondayDayIdx(endDt)];
+  const timeText = formatHourRange(startHour, endHour);
+
+  if (dayCount === 1) {
+    previewEl.innerHTML = `📌 Đang chọn: <strong>${sDayName} (${formatShortDM(startDt)}/${startDt.getFullYear()})</strong> • khung giờ <strong>${timeText}</strong> (${hoursPerDay} tiếng).`;
+  } else {
+    previewEl.innerHTML = `📌 Đang chọn: <strong>${dayCount} ngày liên tiếp</strong> (<strong>${sDayName} ${formatShortDM(startDt)} → ${eDayName} ${formatShortDM(endDt)}</strong>) • <strong>${timeText}</strong> mỗi ngày (tổng ${dayCount * hoursPerDay} tiếng).`;
+  }
+}
+
+export function setBusyRangeMode(mode) {
+  busyRangeMode = mode === 'multi' ? 'multi' : 'single';
+  const btnSingle = document.getElementById('btnRangeModeSingle');
+  const btnMulti = document.getElementById('btnRangeModeMulti');
+  const grid = document.getElementById('busyDateInputsGrid');
+  const endWrap = document.getElementById('busyEndDateWrap');
+  const startLabel = document.getElementById('busyStartDateLabel');
+  const startInput = document.getElementById('busyStartDate');
+  const endInput = document.getElementById('busyEndDate');
+
+  if (btnSingle) {
+    btnSingle.classList.toggle('active', busyRangeMode === 'single');
+    btnSingle.setAttribute('aria-selected', String(busyRangeMode === 'single'));
+  }
+  if (btnMulti) {
+    btnMulti.classList.toggle('active', busyRangeMode === 'multi');
+    btnMulti.setAttribute('aria-selected', String(busyRangeMode === 'multi'));
+  }
+  if (grid) grid.dataset.mode = busyRangeMode;
+  if (endWrap) endWrap.classList.toggle('hidden', busyRangeMode === 'single');
+  if (startLabel) {
+    startLabel.textContent = busyRangeMode === 'single' ? 'Ngày bạn bận' : 'Từ ngày';
+  }
+
+  if (busyRangeMode === 'multi' && startInput && endInput) {
+    const startDt = parseLocalDateKey(startInput.value);
+    if (startDt && (!endInput.value || endInput.value <= startInput.value)) {
+      endInput.value = formatDateKey(addDays(startDt, 1));
+    }
+    if (startInput.value) {
+      endInput.min = startInput.value;
+    }
+  }
+
+  renderBusyRangeQuickDays();
+  updateBusyRangePreview();
+}
+
+export function openBusyRangeModal() {
+  if (!state.room) return;
+  if (!state.activeMemberId) {
+    openModal('memberModal');
+    return;
+  }
+
+  ensureBusyRangeHourSelects();
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = formatDateKey(today);
+
+  let defaultStartDt = today;
+  if (typeof state.mobileDayFilter === 'number' && state.mobileDayFilter >= 0 && state.mobileDayFilter <= 6) {
+    const zoomedDt = addDays(state.currentWeekMonday, state.mobileDayFilter);
+    if (formatDateKey(zoomedDt) >= todayStr) {
+      defaultStartDt = zoomedDt;
+    }
+  } else if (state.currentWeekMonday && formatDateKey(state.currentWeekMonday) > todayStr) {
+    defaultStartDt = state.currentWeekMonday;
+  }
+
+  const startInput = document.getElementById('busyStartDate');
+  const endInput = document.getElementById('busyEndDate');
+  const noteInput = document.getElementById('busyRangeNote');
+  const toolbarNote = document.getElementById('busyNoteInput');
+
+  const defaultStartStr = formatDateKey(defaultStartDt);
+  if (startInput) {
+    startInput.min = todayStr;
+    startInput.value = defaultStartStr;
+  }
+  if (endInput) {
+    endInput.min = defaultStartStr;
+    if (!endInput.value || endInput.value < defaultStartStr) {
+      endInput.value = formatDateKey(addDays(defaultStartDt, 1));
+    }
+  }
+  if (noteInput && !noteInput.value && toolbarNote && toolbarNote.value.trim()) {
+    noteInput.value = toolbarNote.value.trim();
+  }
+
+  syncQuickHourChipsHighlight();
+  setBusyRangeMode(busyRangeMode);
+  openModal('busyRangeModal');
+}
+
+export function initBusyRangeModalEvents({ onAfterApply } = {}) {
+  const btnOpen = document.getElementById('btnOpenBusyRangeModal');
+  if (btnOpen) {
+    btnOpen.addEventListener('click', () => openBusyRangeModal());
+  }
+
+  const btnOpenDrawer = document.getElementById('btnOpenBusyRangeFromDrawer');
+  if (btnOpenDrawer) {
+    btnOpenDrawer.addEventListener('click', () => openBusyRangeModal());
+  }
+
+  document.querySelectorAll('[data-range-mode]').forEach(tab => {
+    tab.addEventListener('click', () => setBusyRangeMode(tab.dataset.rangeMode));
+  });
+
+  const startInput = document.getElementById('busyStartDate');
+  const endInput = document.getElementById('busyEndDate');
+  if (startInput) {
+    startInput.addEventListener('change', () => {
+      if (endInput && startInput.value) {
+        endInput.min = startInput.value;
+        if (endInput.value && endInput.value < startInput.value) {
+          endInput.value = startInput.value;
+        }
+      }
+      renderBusyRangeQuickDays();
+      updateBusyRangePreview();
+    });
+  }
+  if (endInput) {
+    endInput.addEventListener('change', () => {
+      renderBusyRangeQuickDays();
+      updateBusyRangePreview();
+    });
+  }
+
+  const startSel = document.getElementById('busyRangeStartHour');
+  const endSel = document.getElementById('busyRangeEndHour');
+  if (startSel && endSel) {
+    startSel.addEventListener('change', () => {
+      const s = parseInt(startSel.value, 10);
+      const e = parseInt(endSel.value, 10);
+      if (e <= s) {
+        endSel.value = String(Math.min(END_HOUR, s + 1));
+      }
+      syncQuickHourChipsHighlight();
+      updateBusyRangePreview();
+    });
+    endSel.addEventListener('change', () => {
+      const s = parseInt(startSel.value, 10);
+      const e = parseInt(endSel.value, 10);
+      if (e <= s) {
+        startSel.value = String(Math.max(START_HOUR, e - 1));
+      }
+      syncQuickHourChipsHighlight();
+      updateBusyRangePreview();
+    });
+  }
+
+  document.querySelectorAll('#busyQuickHourChips [data-quick-hours]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      ensureBusyRangeHourSelects();
+      const [s, e] = chip.dataset.quickHours.split('-').map(Number);
+      if (startSel && endSel) {
+        startSel.value = String(s);
+        endSel.value = String(e);
+      }
+      syncQuickHourChipsHighlight();
+      updateBusyRangePreview();
+    });
+  });
+
+  const handleApply = (mode) => {
+    const me = getActiveMember();
+    if (!me || !state.room) return;
+
+    const check = validateBusyRangeInputs();
+    if (!check.valid) {
+      showToast('⚠️ ' + check.error);
+      return;
+    }
+
+    const { startDt, endDt, dayCount, startHour, endHour } = check;
+    const noteEl = document.getElementById('busyRangeNote');
+    const note = (noteEl && noteEl.value.trim()) || 'Bận';
+    const dirtyWeeks = {};
+
+    for (let i = 0; i < dayCount; i++) {
+      const dt = addDays(startDt, i);
+      const mon = getMondayOfDate(dt);
+      const wk = formatDateKey(mon);
+      const dayIdx = getMondayDayIdx(dt);
+
+      if (!state.room.schedules[wk]) state.room.schedules[wk] = {};
+      if (!state.room.schedules[wk][me.id]) state.room.schedules[wk][me.id] = {};
+      const mySched = state.room.schedules[wk][me.id];
+
+      for (let h = startHour; h < endHour; h++) {
+        const key = `${dayIdx}-${h}`;
+        if (mode === 'busy') {
+          mySched[key] = { status: 'busy', note };
+        } else {
+          delete mySched[key];
+        }
+      }
+      dirtyWeeks[wk] = mySched;
+    }
+
+    const indicator = document.getElementById('syncStatusText');
+    if (indicator) indicator.textContent = 'Đang lưu...';
+    clearTimeout(syncDebounce);
+
+    emitUpdateSchedulesBatch(state.roomCode, me.id, dirtyWeeks).finally(() => {
+      if (indicator) indicator.textContent = 'Đã đồng bộ ✓';
+    });
+
+    state.currentWeekMonday = getMondayOfDate(startDt);
+    if (dayCount > 1 && state.mobileDayFilter !== 'all') {
+      state.mobileDayFilter = 'all';
+    }
+
+    if (typeof onAfterApply === 'function') {
+      onAfterApply();
+    } else {
+      renderUnifiedScheduleSection();
+    }
+
+    closeModal('busyRangeModal');
+
+    const timeLabel = formatHourRange(startHour, endHour);
+    if (mode === 'busy') {
+      if (dayCount === 1) {
+        showToast(`✅ Đã lưu giờ bận ${DAY_NAMES[getMondayDayIdx(startDt)]} (${formatShortDM(startDt)} • ${timeLabel})!`);
+      } else {
+        showToast(`✅ Đã lưu giờ bận cho ${dayCount} ngày liên tiếp (${formatShortDM(startDt)} – ${formatShortDM(endDt)} • ${timeLabel})!`);
+      }
+    } else {
+      if (dayCount === 1) {
+        showToast(`✨ Đã đặt lại thành Rảnh vào ${DAY_NAMES[getMondayDayIdx(startDt)]} (${formatShortDM(startDt)} • ${timeLabel}).`);
+      } else {
+        showToast(`✨ Đã đặt lại thành Rảnh cho ${dayCount} ngày (${formatShortDM(startDt)} – ${formatShortDM(endDt)} • ${timeLabel}).`);
+      }
+    }
+  };
+
+  const applyBtn = document.getElementById('btnApplyBusyRange');
+  if (applyBtn) {
+    applyBtn.addEventListener('click', () => handleApply('busy'));
+  }
+
+  const clearBtn = document.getElementById('btnClearBusyRange');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => handleApply('free'));
+  }
 }

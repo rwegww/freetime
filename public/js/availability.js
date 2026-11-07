@@ -11,7 +11,7 @@ export function getSlotAvailability(dayIndex, hour, targetMembers = getFilteredM
     const mSched = weekSched[m.id] || {};
     const entry = mSched[key];
     if (entry && entry.status === 'busy') {
-      busyMembers.push({ member: m, note: entry.note || 'Ca làm việc' });
+      busyMembers.push({ member: m, note: entry.note || 'Bận' });
     } else {
       freeMembers.push(m);
     }

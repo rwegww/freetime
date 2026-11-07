@@ -12,7 +12,7 @@ function computeSlotAvailability(weekSchedules = {}, members = [], dayIndex, hou
     const mSched = weekSchedules[m.id] || {};
     const entry = mSched[key];
     if (entry && entry.status === 'busy') {
-      busyMembers.push({ member: m, note: entry.note || 'Ca làm việc' });
+      busyMembers.push({ member: m, note: entry.note || 'Bận' });
     } else {
       freeMembers.push(m);
     }
@@ -76,7 +76,7 @@ function sanitizeScheduleData(rawSchedule) {
     if (val && val.status === 'busy') {
       cleaned[key] = {
         status: 'busy',
-        note: String(val.note || 'Ca làm việc').trim()
+        note: String(val.note || 'Bận').trim()
       };
     }
   }

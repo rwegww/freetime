@@ -185,7 +185,7 @@ async function leaveGroup(req, res, next) {
     }
 
     const io = getIo();
-    if (removedMember) {
+    if (removedMember && room.members && room.members.length > 0) {
       const sysMsg = buildSystemMessage(`👋 ${removedMember.name} đã rời khỏi nhóm.`);
       await dbRepo.addMessage(cleanCode, sysMsg);
       if (io) {
@@ -247,8 +247,10 @@ async function getGroupByCode(req, res, next) {
 async function updateMyGroupSchedule(req, res, next) {
   try {
     const cleanCode = normalizeRoomCode(req.params.code);
-    const { weekKey, schedule } = req.body || {};
-    if (!weekKey) {
+    const { weekKey, schedule, weeks } = req.body || {};
+    const hasBatchWeeks = weeks && typeof weeks === 'object' && !Array.isArray(weeks);
+
+    if (!weekKey && !hasBatchWeeks) {
       return res.status(400).json({ error: 'Thiếu thông tin tuần (weekKey).' });
     }
 
@@ -263,6 +265,47 @@ async function updateMyGroupSchedule(req, res, next) {
     }
 
     touchMemberHeartbeat(cleanCode, myMember.id);
+
+    if (hasBatchWeeks) {
+      const weekEntries = Object.entries(weeks)
+        .filter(([wk]) => /^\d{4}-\d{2}-\d{2}$/.test(String(wk)))
+        .slice(0, 16);
+      if (weekEntries.length === 0) {
+        return res.status(400).json({ error: 'Danh sách tuần cập nhật không hợp lệ.' });
+      }
+
+      const cleanedWeeks = {};
+      for (const [wk, rawSched] of weekEntries) {
+        const existingSchedule = await dbRepo.getSchedule(cleanCode, myMember.id, wk);
+        cleanedWeeks[wk] = enforceNoPastScheduleChanges(
+          existingSchedule,
+          sanitizeScheduleData(rawSched),
+          wk
+        );
+      }
+
+      const result = await dbRepo.saveSchedulesBatch(cleanCode, myMember.id, cleanedWeeks);
+      const io = getIo();
+      if (io && result && result.weeks) {
+        const updatedAt = new Date().toISOString();
+        for (const [wk, savedSched] of Object.entries(result.weeks)) {
+          io.to(cleanCode).emit('schedule_updated', {
+            memberId: myMember.id,
+            memberName: myMember.name,
+            weekKey: wk,
+            schedule: savedSched,
+            updatedAt
+          });
+        }
+      }
+
+      return res.json({
+        memberId: myMember.id,
+        memberName: myMember.name,
+        weeks: result ? result.weeks : cleanedWeeks
+      });
+    }
+
     const existingSchedule = await dbRepo.getSchedule(cleanCode, myMember.id, weekKey);
     const cleaned = enforceNoPastScheduleChanges(
       existingSchedule,

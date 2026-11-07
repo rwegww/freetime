@@ -57,7 +57,8 @@ import {
   renderMemberFilterChips,
   renderUnifiedScheduleSection,
   syncMyScheduleToServer,
-  openSlotInspector
+  openSlotInspector,
+  initBusyRangeModalEvents
 } from './calendar.js';
 import {
   renderChatHeader,
@@ -75,6 +76,7 @@ import {
 let authConfigCache = null;
 let googleScriptPromise = null;
 let pendingSwitchInvite = null;
+let lastTeammateScheduleToastAt = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
   bootstrapApp();
@@ -1342,6 +1344,10 @@ function bindWorkspaceEvents() {
     btnMobileTools.addEventListener('click', () => setScheduleDrawer('tools'));
   }
 
+  initBusyRangeModalEvents({
+    onAfterApply: () => renderAll()
+  });
+
   document.querySelectorAll('.mobile-nav-item[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => switchMobileTab(btn.dataset.tab));
   });
@@ -1356,7 +1362,7 @@ function bindWorkspaceEvents() {
       if (!state.room.schedules[weekKey][me.id]) state.room.schedules[weekKey][me.id] = {};
 
       const mySched = state.room.schedules[weekKey][me.id];
-      const note = document.getElementById('busyNoteInput').value.trim() || 'Ca làm việc';
+      const note = document.getElementById('busyNoteInput').value.trim() || 'Bận';
 
       if (preset === 'clear') {
         const editableDays = [0, 1, 2, 3, 4, 5, 6].filter(d => !isDayIndexPast(d));
@@ -1637,8 +1643,8 @@ function bindWorkspaceEvents() {
       delete mySched[key];
       showToast(`Đã hủy lịch làm việc của bạn vào ${DAY_NAMES[dayIndex]} (${formatHourRange(hour)}).`);
     } else {
-      mySched[key] = { status: 'busy', note: 'Ca làm việc' };
-      showToast(`Đã đăng ký làm việc vào ${DAY_NAMES[dayIndex]} (${formatHourRange(hour)}).`);
+      mySched[key] = { status: 'busy', note: 'Bận' };
+      showToast(`Đã đánh dấu bận vào ${DAY_NAMES[dayIndex]} (${formatHourRange(hour)}).`);
     }
 
     renderUnifiedScheduleSection();
@@ -1651,7 +1657,7 @@ function bindWorkspaceEvents() {
     const me = getActiveMember();
     if (!me) return;
 
-    const title = document.getElementById('slotProposeTitle').value.trim() || 'Họp / Trao đổi nhóm';
+    const title = document.getElementById('slotProposeTitle').value.trim() || 'Hẹn nhóm';
     const startHour = parseInt(document.getElementById('slotProposeStart').value, 10);
     const endHour = Math.max(startHour + 1, parseInt(document.getElementById('slotProposeEnd').value, 10));
     const { dayIndex } = state.inspectedSlot;
@@ -1773,7 +1779,11 @@ function initSocketListeners() {
       renderUnifiedScheduleSection();
 
       if (memberId !== state.activeMemberId) {
-        showToast(`🔄 ${memberName} vừa đăng ký/cập nhật lịch làm việc!`);
+        const now = Date.now();
+        if (now - lastTeammateScheduleToastAt > 1200) {
+          lastTeammateScheduleToastAt = now;
+          showToast(`🔄 ${memberName} vừa đăng ký/cập nhật lịch làm việc!`);
+        }
       }
     },
     onNewMessage(msg) {

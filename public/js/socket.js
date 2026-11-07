@@ -171,13 +171,39 @@ export function emitUpdateSchedule(roomCode, memberId, weekKey, schedule) {
       schedule,
       token: getSavedToken()
     });
-    return;
+    return Promise.resolve();
   }
 
-  fetch(`/api/groups/${encodeURIComponent(roomCode)}/schedule`, {
+  return fetch(`/api/groups/${encodeURIComponent(roomCode)}/schedule`, {
     method: 'PUT',
     headers: authJsonHeaders(),
     body: JSON.stringify({ weekKey, schedule })
+  }).catch(() => {});
+}
+
+export function emitUpdateSchedulesBatch(roomCode, memberId, weeksMap) {
+  if (!weeksMap || typeof weeksMap !== 'object') return Promise.resolve();
+  const keys = Object.keys(weeksMap);
+  if (keys.length === 0) return Promise.resolve();
+  if (keys.length === 1) {
+    const wk = keys[0];
+    return emitUpdateSchedule(roomCode, memberId, wk, weeksMap[wk]);
+  }
+
+  if (socket) {
+    socket.emit('update_schedule', {
+      roomCode,
+      memberId,
+      weeks: weeksMap,
+      token: getSavedToken()
+    });
+    return Promise.resolve();
+  }
+
+  return fetch(`/api/groups/${encodeURIComponent(roomCode)}/schedule`, {
+    method: 'PUT',
+    headers: authJsonHeaders(),
+    body: JSON.stringify({ weeks: weeksMap })
   }).catch(() => {});
 }
 

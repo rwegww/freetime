@@ -41,10 +41,10 @@ function buildSteps() {
       text: 'Bấm vào từng ô giờ bạn BẬN. Ô màu xanh lá là lúc cả nhóm cùng rảnh!'
     },
     {
-      getTarget: () => document.querySelector('.register-toolbar .segmented'),
+      getTarget: () => document.getElementById('btnOpenBusyRangeModal'),
       maxSpotHeight: 64,
-      title: 'Đổi thao tác nhanh',
-      text: 'Chọn "Xóa" để hủy giờ bận, hoặc "Chi tiết" để xem ai đang rảnh.'
+      title: 'Nhập khoảng giờ bận',
+      text: 'Không cần chấm từng ô: bấm vào đây để nhập hẳn giờ bận cho 1 ngày hoặc nhiều ngày liên tiếp!'
     },
     {
       getTarget: () => document.getElementById('btnCopyRoomLink'),
