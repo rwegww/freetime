@@ -87,6 +87,13 @@ export async function createNewGroup({ name, code, description }) {
   return parseJsonResponse(res, 'Không thể tạo nhóm mới.');
 }
 
+export async function previewGroupByCode(rawCode) {
+  const res = await fetch(`/api/groups/preview?code=${encodeURIComponent(String(rawCode || ''))}`, {
+    headers: authHeaders()
+  });
+  return parseJsonResponse(res, 'Không thể kiểm tra mã nhóm.');
+}
+
 export async function joinGroupByCode(code) {
   const res = await fetch('/api/groups/join', {
     method: 'POST',

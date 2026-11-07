@@ -9,6 +9,8 @@ router.use(requireAuth);
 router.get('/', groupsController.listMyGroups);
 router.post('/', groupsController.createGroup);
 router.post('/join', groupsController.joinGroup);
+router.get('/preview', groupsController.previewGroupByCode);
+router.get('/preview/:code', groupsController.previewGroupByCode);
 router.get('/:code', groupsController.getGroupByCode);
 router.put('/:code/schedule', groupsController.updateMyGroupSchedule);
 router.post('/:code/messages', groupsController.postGroupMessage);

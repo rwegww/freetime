@@ -5,6 +5,30 @@ function normalizeRoomCode(code) {
     .replace(/[^A-Z0-9_-]/g, '');
 }
 
+function extractInviteCode(rawInput) {
+  const str = String(rawInput || '').trim();
+  if (!str) return '';
+
+  const urlRoomMatch = str.match(/[?&]room=([A-Za-z0-9_-]{3,32})/i);
+  if (urlRoomMatch && urlRoomMatch[1]) {
+    return normalizeRoomCode(urlRoomMatch[1]);
+  }
+
+  const hashMatch = str.match(/#([A-Za-z0-9_-]{3,32})\b/);
+  if (hashMatch && hashMatch[1]) {
+    return normalizeRoomCode(hashMatch[1]);
+  }
+
+  const phraseMatch = str.match(
+    /m[aã](?:\s+nh[oó]m|\s+m[oờ]i)?(?:\s+l[aà])?\s*[:=-]?\s*#?([A-Za-z0-9_-]{3,32})\b/i
+  );
+  if (phraseMatch && phraseMatch[1]) {
+    return normalizeRoomCode(phraseMatch[1]);
+  }
+
+  return normalizeRoomCode(str);
+}
+
 function isValidRoomCode(code) {
   const normalized = normalizeRoomCode(code);
   return normalized.length >= 3 && normalized.length <= 32;
@@ -39,6 +63,7 @@ function generateRoomCode() {
 
 module.exports = {
   normalizeRoomCode,
+  extractInviteCode,
   isValidRoomCode,
   makeAvatar,
   getCurrentMondayKey,

@@ -1,7 +1,7 @@
 const dbRepo = require('../repositories/db.repository');
 const { buildSystemMessage, buildMemberMessage, toggleProposalVote } = require('../services/proposal.service');
 const { sanitizeScheduleData, enforceNoPastScheduleChanges } = require('../services/availability.service');
-const { normalizeRoomCode, isValidRoomCode } = require('../utils/roomCode');
+const { normalizeRoomCode, extractInviteCode, isValidRoomCode } = require('../utils/roomCode');
 const { getOnlineMemberIds, getIo } = require('../sockets');
 
 const restHeartbeats = {}; // { [roomCode]: { [memberId]: timestampMs } }
@@ -86,12 +86,48 @@ async function createGroup(req, res, next) {
   }
 }
 
+async function previewGroupByCode(req, res, next) {
+  try {
+    const rawCode = req.query.code !== undefined ? req.query.code : req.params.code;
+    const cleanCode = extractInviteCode(rawCode);
+    if (!isValidRoomCode(cleanCode)) {
+      return res.json({
+        found: false,
+        valid: false,
+        code: cleanCode
+      });
+    }
+
+    const room = await dbRepo.getRoom(cleanCode);
+    if (!room) {
+      return res.json({
+        found: false,
+        valid: true,
+        code: cleanCode
+      });
+    }
+
+    const alreadyMember = room.members.some(m => m.userId === req.user.id);
+    return res.json({
+      found: true,
+      valid: true,
+      code: room.code,
+      name: room.name,
+      description: room.description || '',
+      memberCount: room.members.length,
+      alreadyMember
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function joinGroup(req, res, next) {
   try {
     const { code } = req.body || {};
-    const cleanCode = normalizeRoomCode(code);
+    const cleanCode = extractInviteCode(code);
     if (!isValidRoomCode(cleanCode)) {
-      return res.status(400).json({ error: 'Vui lòng nhập mã nhóm hợp lệ (ít nhất 3 ký tự).' });
+      return res.status(400).json({ error: 'Vui lòng nhập mã nhóm hoặc dán link mời hợp lệ (ít nhất 3 ký tự).' });
     }
 
     const result = await dbRepo.joinGroupForUser(cleanCode, req.user);
@@ -282,6 +318,7 @@ async function voteGroupProposal(req, res, next) {
 module.exports = {
   listMyGroups,
   createGroup,
+  previewGroupByCode,
   joinGroup,
   getGroupByCode,
   updateMyGroupSchedule,

@@ -13,6 +13,7 @@ const {
 } = require('../server/services/proposal.service');
 const {
   normalizeRoomCode,
+  extractInviteCode,
   isValidRoomCode,
   makeAvatar
 } = require('../server/utils/roomCode');
@@ -106,8 +107,16 @@ describe('Pure Services & Utils Unit Tests', () => {
     assert.equal(sys.memberId, 'system');
   });
 
-  it('roomCode utils chuẩn hóa mã phòng và tạo avatar viết tắt chuẩn', () => {
+  it('roomCode utils chuẩn hóa mã phòng, tự tách mã từ link/tin nhắn mời và tạo avatar viết tắt chuẩn', () => {
     assert.equal(normalizeRoomCode('  team 01! '), 'TEAM01');
+    assert.equal(extractInviteCode('https://freetime-olive.vercel.app/?room=ft8k2m'), 'FT8K2M');
+    assert.equal(
+      extractInviteCode('👋 Mình mời bạn vào nhóm nhé: https://freetime-olive.vercel.app/?room=FT9A2B (Hoặc nhập mã: FT9A2B)'),
+      'FT9A2B'
+    );
+    assert.equal(extractInviteCode('Vào nhóm lịch của mình nhé #ft7788 nha!'), 'FT7788');
+    assert.equal(extractInviteCode('Mã nhóm là: ca_sang01 nhé bạn'), 'CA_SANG01');
+    assert.equal(extractInviteCode('  ft 8k 2m  '), 'FT8K2M');
     assert.equal(isValidRoomCode('TEAM01'), true);
     assert.equal(isValidRoomCode('AB'), false);
     assert.equal(makeAvatar('Nguyễn Văn An'), 'NA');

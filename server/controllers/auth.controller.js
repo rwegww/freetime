@@ -33,7 +33,7 @@ async function register(req, res, next) {
     }
     if (!isValidUsername(cleanUsername)) {
       return res.status(400).json({
-        error: 'Tên đăng nhập / Email cần từ 3–64 ký tự (chữ không dấu, số hoặc . _ @ -).'
+        error: 'Tên đăng nhập nên viết liền không dấu, hoặc dùng Số điện thoại / Email (VD: 0912345678 hoặc tuankiet).'
       });
     }
     if (rawPassword.length < 6) {

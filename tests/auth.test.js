@@ -226,14 +226,35 @@ describe('Auth, Groups & Shared Group Chat Integration Tests', () => {
     const forbiddenBody = await resForbidden.json();
     assert.equal(forbiddenBody.canJoin, true);
 
-    // User 2 joins group by invite code
+    // User 2 previews group before joining (supports full Zalo invite URL/text)
+    const pastedZaloInvite = `👋 Vào nhóm lịch nhé: https://freetime-olive.vercel.app/?room=${groupCode.toLowerCase()}`;
+    const resPreviewFound = await fetch(
+      `${baseUrl}/api/groups/preview?code=${encodeURIComponent(pastedZaloInvite)}`,
+      { headers: { Authorization: `Bearer ${user2Token}` } }
+    );
+    assert.equal(resPreviewFound.status, 200);
+    const previewFound = await resPreviewFound.json();
+    assert.equal(previewFound.found, true);
+    assert.equal(previewFound.code, groupCode);
+    assert.equal(previewFound.name, 'Nhóm Đồ Án Chung');
+    assert.equal(previewFound.memberCount, 1);
+    assert.equal(previewFound.alreadyMember, false);
+
+    const resPreviewMissing = await fetch(`${baseUrl}/api/groups/preview?code=KHONGTONTAI`, {
+      headers: { Authorization: `Bearer ${user2Token}` }
+    });
+    assert.equal(resPreviewMissing.status, 200);
+    const previewMissing = await resPreviewMissing.json();
+    assert.equal(previewMissing.found, false);
+
+    // User 2 joins group even when pasting the full Zalo invite message!
     const resJoin = await fetch(`${baseUrl}/api/groups/join`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${user2Token}`
       },
-      body: JSON.stringify({ code: groupCode })
+      body: JSON.stringify({ code: pastedZaloInvite })
     });
     assert.equal(resJoin.status, 200);
     const joined = await resJoin.json();

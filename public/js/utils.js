@@ -73,3 +73,44 @@ export function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+export function normalizeInviteCode(code) {
+  return String(code || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9_-]/g, '');
+}
+
+export function extractInviteCode(rawInput) {
+  const str = String(rawInput || '').trim();
+  if (!str) return '';
+
+  const urlRoomMatch = str.match(/[?&]room=([A-Za-z0-9_-]{3,32})/i);
+  if (urlRoomMatch && urlRoomMatch[1]) {
+    return normalizeInviteCode(urlRoomMatch[1]);
+  }
+
+  const hashMatch = str.match(/#([A-Za-z0-9_-]{3,32})\b/);
+  if (hashMatch && hashMatch[1]) {
+    return normalizeInviteCode(hashMatch[1]);
+  }
+
+  const phraseMatch = str.match(
+    /m[aã](?:\s+nh[oó]m|\s+m[oờ]i)?(?:\s+l[aà])?\s*[:=-]?\s*#?([A-Za-z0-9_-]{3,32})\b/i
+  );
+  if (phraseMatch && phraseMatch[1]) {
+    return normalizeInviteCode(phraseMatch[1]);
+  }
+
+  return normalizeInviteCode(str);
+}
+
+export function slugifyUsernameSuggestion(rawText) {
+  return String(rawText || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/gi, 'd')
+    .toLowerCase()
+    .replace(/[^a-z0-9._@-]/g, '')
+    .slice(0, 32);
+}
