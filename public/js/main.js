@@ -1551,6 +1551,14 @@ function bindWorkspaceEvents() {
   });
 
   const chatInput = document.getElementById('chatInput');
+  chatInput.addEventListener('focus', () => {
+    if (window.innerWidth <= 960) {
+      setTimeout(() => {
+        const container = document.getElementById('chatMessagesList');
+        if (container) container.scrollTop = container.scrollHeight;
+      }, 250);
+    }
+  });
   chatInput.addEventListener('input', () => {
     if (!state.activeMemberId || !state.roomCode) return;
     emitTyping(state.roomCode, state.activeMemberId, chatInput.value.trim().length > 0);

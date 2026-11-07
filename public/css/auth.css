@@ -1276,3 +1276,16 @@ body[data-app-stage="workspace"] .onboarding-screen {
     padding: 7px 14px;
   }
 }
+
+/* Chặn hoàn toàn lỗi tự động phóng to (auto-zoom) khi chạm vào ô nhập liệu trên iPhone / Android */
+@media (max-width: 960px), (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select,
+  .chat-input-form input,
+  .modal-input,
+  .modal-select,
+  .input-compact {
+    font-size: 16px !important;
+  }
+}
