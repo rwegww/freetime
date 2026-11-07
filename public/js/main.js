@@ -131,10 +131,11 @@ async function bootstrapApp() {
   initCloudTourEvents();
   initSocketListeners();
 
-  // Handle Supabase Google OAuth redirect callback (#access_token=...)
-  if (window.location.hash && window.location.hash.includes('access_token=')) {
+  // Handle Supabase Google OAuth redirect callback (#access_token=... or #error=...)
+  if (window.location.hash && (window.location.hash.includes('access_token=') || window.location.hash.includes('error='))) {
     const hashParams = new URLSearchParams(window.location.hash.slice(1));
     const supaAccessToken = hashParams.get('access_token');
+    const oauthErrDesc = hashParams.get('error_description') || hashParams.get('error');
     window.history.replaceState({}, '', window.location.pathname + window.location.search);
     if (supaAccessToken) {
       const rememberOAuth = localStorage.getItem('freetime_oauth_remember') !== '0';
@@ -154,6 +155,11 @@ async function bootstrapApp() {
         showAuthError(err.message);
         return;
       }
+    }
+    if (oauthErrDesc) {
+      setAppStage('auth');
+      showAuthError('Đăng nhập Google chưa hoàn tất: ' + oauthErrDesc.replace(/\+/g, ' '));
+      return;
     }
   }
 
@@ -697,7 +703,9 @@ async function triggerGoogleSignIn(loginHint = '') {
   if (googleLabel) googleLabel.textContent = 'Đang kết nối Google...';
 
   try {
-    const cfg = authConfigCache || (await fetchAuthConfig());
+    const hasConfigured =
+      authConfigCache && (authConfigCache.googleClientId || authConfigCache.supabaseGoogleEnabled);
+    const cfg = hasConfigured ? authConfigCache : await fetchAuthConfig();
     authConfigCache = cfg;
 
     // Path 1: Google Identity Services OAuth2 Popup (GOOGLE_CLIENT_ID)
@@ -747,7 +755,10 @@ async function triggerGoogleSignIn(loginHint = '') {
       if (state.pendingInviteCode) {
         localStorage.setItem('freetime_pending_oauth_room', state.pendingInviteCode);
       }
-      const redirectTo = `${window.location.origin}${window.location.pathname}`;
+      const redirectTo =
+        window.location.pathname === '/'
+          ? window.location.origin
+          : `${window.location.origin}${window.location.pathname}`;
       window.location.href = `${cfg.supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
       return;
     }

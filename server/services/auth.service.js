@@ -101,7 +101,8 @@ async function getPublicAuthConfig({ fetchImpl = fetch } = {}) {
 
   let supabaseGoogleEnabled = false;
   if (supabaseUrl && apiKey) {
-    if (Date.now() - cachedSupabaseGoogle.checkedAt < 60000) {
+    const cacheTtlMs = cachedSupabaseGoogle.enabled ? 60000 : 2000;
+    if (Date.now() - cachedSupabaseGoogle.checkedAt < cacheTtlMs) {
       supabaseGoogleEnabled = cachedSupabaseGoogle.enabled;
     } else {
       try {
