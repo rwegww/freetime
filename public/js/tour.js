@@ -42,12 +42,6 @@ function buildSteps() {
       text: 'Chạm trực tiếp vào ô ở cột của bạn để tick chọn ca RẢNH (✓) hoặc BẬN (✕).'
     },
     {
-      getTarget: () => document.getElementById('btnToggleInsights'),
-      maxSpotHeight: 64,
-      title: 'Xem gợi ý giờ rảnh',
-      text: 'Bấm đây để xem tổng số giờ rảnh và các khoảng thời gian cả nhóm cùng rảnh dài nhất.'
-    },
-    {
       getTarget: () => document.getElementById('btnCopyRoomLink'),
       maxSpotHeight: 56,
       title: 'Mời bạn bè',

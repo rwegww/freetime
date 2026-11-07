@@ -420,7 +420,8 @@ export function renderUnifiedScheduleSection() {
   }
 
   // 3. Update Summary Stats
-  document.getElementById('statAllFreeHours').textContent = `${allFreeSlotsCount}h rảnh`;
+  const statAllFree = document.getElementById('statAllFreeHours');
+  if (statAllFree) statAllFree.textContent = `${allFreeSlotsCount}h rảnh`;
   const mobileFreeBadge = document.getElementById('mobileTabFreeBadge');
   if (mobileFreeBadge) mobileFreeBadge.textContent = `${allFreeSlotsCount}h rảnh`;
 
@@ -428,8 +429,10 @@ export function renderUnifiedScheduleSection() {
   if (me) {
     const myBusy = Object.values(mySched).filter(x => x && x.status === 'busy').length;
     const myFree = totalSlots - myBusy;
-    document.getElementById('statMyBusyHours').textContent = `${myBusy}h bận`;
-    document.getElementById('statMyFreeHours').textContent = `${myFree}h trống`;
+    const myBusyEl = document.getElementById('statMyBusyHours');
+    if (myBusyEl) myBusyEl.textContent = `${myBusy}h bận`;
+    const myFreeEl = document.getElementById('statMyFreeHours');
+    if (myFreeEl) myFreeEl.textContent = `${myFree}h trống`;
     const mobilePersonalBadge = document.getElementById('mobileTabPersonalBadge');
     if (mobilePersonalBadge) mobilePersonalBadge.textContent = `${myBusy}h bận`;
   }
