@@ -54,6 +54,13 @@ import {
   renderChatMessages,
   createMessageElement
 } from './chat.js';
+import {
+  initCloudTourEvents,
+  startCloudTour,
+  stopCloudTour,
+  syncOnboardingCloudTip,
+  dismissOnboardingCloudTip
+} from './tour.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   bootstrapApp();
@@ -69,6 +76,7 @@ async function bootstrapApp() {
   bindAuthEvents();
   bindOnboardingEvents();
   bindWorkspaceEvents();
+  initCloudTourEvents();
   initSocketListeners();
 
   const savedToken = getSavedToken();
@@ -92,6 +100,7 @@ function setAppStage(stage) {
   document.body.dataset.appStage = stage;
   if (stage !== 'workspace') {
     closeAllModals();
+    stopCloudTour({ markSeen: false });
   }
 
   if (stage === 'auth') {
@@ -127,8 +136,9 @@ function renderOnboardingHeader() {
     nameEl.textContent = `Xin chào, ${user.name}! 👋`;
   }
   if (userEl) {
-    userEl.textContent = `Tài khoản @${user.username} • Chọn 1 trong 2 cách bên dưới để bắt đầu`;
+    userEl.textContent = `@${user.username}`;
   }
+  syncOnboardingCloudTip(user.id);
 }
 
 async function handlePostAuth(user, rooms = []) {
@@ -166,7 +176,22 @@ async function handlePostAuth(user, rooms = []) {
   setAppStage('onboarding');
 }
 
-function enterLoadedGroup(room, member, onlineMemberIds = []) {
+function scheduleAutoCloudTour() {
+  if (!state.currentUser || !state.currentUser.id) return;
+  setTimeout(() => {
+    const anyModalOpen = Boolean(document.querySelector('.modal-backdrop:not(.hidden)'));
+    if (anyModalOpen || document.body.dataset.appStage !== 'workspace') return;
+    startCloudTour({
+      userId: state.currentUser.id,
+      force: false,
+      onBeforeStart: () => {
+        if (window.innerWidth <= 960) switchMobileTab('schedule');
+      }
+    });
+  }, 260);
+}
+
+function enterLoadedGroup(room, member, onlineMemberIds = [], { deferAutoTour = false } = {}) {
   state.roomCode = room.code;
   state.room = room;
   state.activeMemberId = member ? member.id : null;
@@ -185,6 +210,10 @@ function enterLoadedGroup(room, member, onlineMemberIds = []) {
   setAppStage('workspace');
   emitJoinRoom(state.roomCode, state.activeMemberId);
   renderAll();
+
+  if (!deferAutoTour) {
+    scheduleAutoCloudTour();
+  }
 }
 
 async function openGroupWorkspace(code) {
@@ -413,17 +442,15 @@ function openInviteCelebrationModal({ isNewlyCreated = false } = {}) {
   const shareBtn = document.getElementById('btnShareInviteMessage');
 
   if (tagEl) {
-    tagEl.textContent = isNewlyCreated ? 'HOÀN TẤT • MỜI BẠN BÈ VÀO NHÓM' : 'MỜI BẠN BÈ VÀO NHÓM';
+    tagEl.textContent = isNewlyCreated ? 'MÃ NHÓM CỦA BẠN' : 'MỜI BẠN BÈ';
   }
   if (headingEl) {
     headingEl.textContent = isNewlyCreated
       ? '🎉 Tạo nhóm thành công!'
-      : '👋 Mời bạn bè vào nhóm';
+      : '👋 Mời bạn vào nhóm';
   }
   if (subtextEl) {
-    subtextEl.textContent = isNewlyCreated
-      ? 'Nhóm của bạn đã sẵn sàng! Hãy gửi lời mời qua Zalo / Messenger hoặc đọc Mã nhóm bên dưới để mọi người cùng vào nhé:'
-      : 'Gửi lời mời qua Zalo / Messenger hoặc đọc Mã nhóm bên dưới để bạn bè vào chung bảng lịch & phòng chat:';
+    subtextEl.textContent = 'Gửi mã hoặc link bên dưới cho bạn bè để cùng vào nhóm:';
   }
   if (nameEl) {
     nameEl.textContent = state.room ? state.room.name : `Nhóm #${state.roomCode}`;
@@ -433,7 +460,7 @@ function openInviteCelebrationModal({ isNewlyCreated = false } = {}) {
   }
   if (shareBtn) {
     shareBtn.classList.remove('copied-ok');
-    shareBtn.textContent = '💬 Gửi / Sao chép lời mời qua Zalo, Messenger';
+    shareBtn.textContent = '💬 Gửi lời mời qua Zalo / Messenger';
   }
 
   openModal('groupCreatedModal');
@@ -709,10 +736,27 @@ function setOnboardingMode(mode) {
 function bindOnboardingEvents() {
   document.getElementById('btnOnboardingLogout').addEventListener('click', performLogout);
 
+  const btnDismissCloud = document.getElementById('btnDismissOnboardCloud');
+  if (btnDismissCloud) {
+    btnDismissCloud.addEventListener('click', () => {
+      dismissOnboardingCloudTip(state.currentUser ? state.currentUser.id : '');
+    });
+  }
+
   const btnCreateChoice = document.getElementById('btnChooseCreateGroup');
   const btnJoinChoice = document.getElementById('btnChooseJoinGroup');
-  if (btnCreateChoice) btnCreateChoice.addEventListener('click', () => setOnboardingMode('create'));
-  if (btnJoinChoice) btnJoinChoice.addEventListener('click', () => setOnboardingMode('join'));
+  if (btnCreateChoice) {
+    btnCreateChoice.addEventListener('click', () => {
+      dismissOnboardingCloudTip(state.currentUser ? state.currentUser.id : '');
+      setOnboardingMode('create');
+    });
+  }
+  if (btnJoinChoice) {
+    btnJoinChoice.addEventListener('click', () => {
+      dismissOnboardingCloudTip(state.currentUser ? state.currentUser.id : '');
+      setOnboardingMode('join');
+    });
+  }
 
   document.querySelectorAll('[data-quick-group-name]').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -747,10 +791,10 @@ function bindOnboardingEvents() {
         if (mySeq !== previewReqSeq) return;
         if (info.found) {
           previewEl.className = 'join-group-preview found';
-          previewEl.innerHTML = `✅ Đã tìm thấy nhóm: <strong>${escapeHtml(info.name)}</strong> (#${escapeHtml(info.code)} • ${info.memberCount} thành viên). Bấm nút bên dưới để vào ngay!`;
+          previewEl.innerHTML = `✅ Nhóm: <strong>${escapeHtml(info.name)}</strong> (#${escapeHtml(info.code)} • ${info.memberCount} thành viên)`;
         } else if (info.valid) {
           previewEl.className = 'join-group-preview not-found';
-          previewEl.innerHTML = `🔎 Chưa tìm thấy nhóm nào mang mã <strong>#${escapeHtml(info.code)}</strong>. Bạn kiểm tra lại xem có gõ nhầm ký tự nào không nhé!`;
+          previewEl.innerHTML = `🔎 Chưa tìm thấy nhóm <strong>#${escapeHtml(info.code)}</strong>. Kiểm tra lại mã nhé!`;
         } else {
           previewEl.classList.add('hidden');
         }
@@ -795,7 +839,7 @@ function bindOnboardingEvents() {
       const data = await createNewGroup({ name, code, description });
       document.getElementById('onboardingCreateGroupForm').reset();
       document.querySelectorAll('[data-quick-group-name]').forEach(c => c.classList.remove('active'));
-      enterLoadedGroup(data.room, data.member, data.onlineMemberIds);
+      enterLoadedGroup(data.room, data.member, data.onlineMemberIds, { deferAutoTour: true });
       openInviteCelebrationModal({ isNewlyCreated: true });
       showToast(`✨ Đã tạo nhóm "${data.room.name}" (#${data.room.code})!`);
     } catch (err) {
@@ -847,7 +891,12 @@ function bindWorkspaceEvents() {
 
   document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
     backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop) backdrop.classList.add('hidden');
+      if (e.target === backdrop) {
+        backdrop.classList.add('hidden');
+        if (backdrop.id === 'groupCreatedModal') {
+          scheduleAutoCloudTour();
+        }
+      }
     });
   });
 
@@ -957,34 +1006,16 @@ function bindWorkspaceEvents() {
     });
   });
 
-  const GUIDE_HIDE_KEY = 'freetime_hide_guide_v1';
-  const guideBanner = document.getElementById('beginnerGuideBanner');
-  const btnDismissGuide = document.getElementById('btnDismissGuide');
-  const btnShowGuideAgain = document.getElementById('btnShowGuideAgain');
-  const btnGuideOpenInvite = document.getElementById('btnGuideOpenInvite');
-
-  const syncGuideVisibility = () => {
-    const hidden = localStorage.getItem(GUIDE_HIDE_KEY) === '1';
-    if (guideBanner) guideBanner.classList.toggle('hidden', hidden);
-    if (btnShowGuideAgain) btnShowGuideAgain.classList.toggle('hidden', !hidden);
-  };
-  syncGuideVisibility();
-
-  if (btnDismissGuide) {
-    btnDismissGuide.addEventListener('click', () => {
-      localStorage.setItem(GUIDE_HIDE_KEY, '1');
-      syncGuideVisibility();
-    });
-  }
-  if (btnShowGuideAgain) {
-    btnShowGuideAgain.addEventListener('click', () => {
-      localStorage.removeItem(GUIDE_HIDE_KEY);
-      syncGuideVisibility();
-    });
-  }
-  if (btnGuideOpenInvite) {
-    btnGuideOpenInvite.addEventListener('click', () => {
-      openInviteCelebrationModal({ isNewlyCreated: false });
+  const btnReplayCloudTour = document.getElementById('btnReplayCloudTour');
+  if (btnReplayCloudTour) {
+    btnReplayCloudTour.addEventListener('click', () => {
+      startCloudTour({
+        userId: state.currentUser ? state.currentUser.id : '',
+        force: true,
+        onBeforeStart: () => {
+          if (window.innerWidth <= 960) switchMobileTab('schedule');
+        }
+      });
     });
   }
 
@@ -1089,7 +1120,13 @@ function bindWorkspaceEvents() {
   }
 
   document.querySelectorAll('[data-close]').forEach(btn => {
-    btn.addEventListener('click', () => closeModal(btn.dataset.close));
+    btn.addEventListener('click', () => {
+      const modalId = btn.dataset.close;
+      closeModal(modalId);
+      if (modalId === 'groupCreatedModal') {
+        scheduleAutoCloudTour();
+      }
+    });
   });
 
   document.querySelectorAll('#memberColorPicker .color-swatch').forEach(sw => {
@@ -1154,7 +1191,7 @@ function bindWorkspaceEvents() {
       document.getElementById('newRoomCode').value = '';
       document.getElementById('newRoomName').value = '';
       closeModal('roomModal');
-      enterLoadedGroup(data.room, data.member, data.onlineMemberIds);
+      enterLoadedGroup(data.room, data.member, data.onlineMemberIds, { deferAutoTour: true });
       openInviteCelebrationModal({ isNewlyCreated: true });
       showToast(`✨ Đã tạo nhóm mới "${data.room.name}" (#${data.room.code})!`);
     } catch (err) {

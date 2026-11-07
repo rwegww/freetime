@@ -30,14 +30,14 @@
         </div>
 
         <div class="auth-hero-copy">
-          <h2>Đồng bộ lịch bận, tìm giờ trống & trò chuyện chung theo từng nhóm.</h2>
-          <p>Tạo tài khoản cá nhân trong vài giây, lập nhóm riêng hoặc nhập mã mời để kết nối ngay vào bảng lịch và phòng trò chuyện chung của nhóm.</p>
+          <h2>Hẹn lịch nhóm cực nhanh, không cần hỏi từng người.</h2>
+          <p>Chọn giờ bận của bạn — hệ thống tự hiện giờ rảnh chung và mở phòng chat riêng cho nhóm.</p>
         </div>
 
         <ul class="auth-feature-list">
-          <li>📅 Tự động suy ra các khung giờ cả nhóm cùng rảnh</li>
-          <li>💬 Mỗi nhóm có phòng trò chuyện & bình chọn lịch hẹn riêng</li>
-          <li>📱 Đồng bộ tức thì trên cả máy tính và điện thoại</li>
+          <li>📅 Tự động tìm giờ cả nhóm rảnh</li>
+          <li>💬 Trò chuyện & chốt hẹn chung</li>
+          <li>📱 Gọn nhẹ trên điện thoại & máy tính</li>
         </ul>
       </div>
 
@@ -48,7 +48,7 @@
           </div>
           <div>
             <h1 class="brand-title">FreeTime Sync</h1>
-            <p class="brand-subtitle">Đăng nhập hoặc tạo tài khoản mới</p>
+            <p class="brand-subtitle">Lịch rảnh & Trò chuyện nhóm</p>
           </div>
         </div>
 
@@ -64,66 +64,64 @@
         <!-- Form Đăng nhập -->
         <form id="loginForm" class="auth-form">
           <div class="form-row">
-            <label for="loginUsername">Số điện thoại, Tên đăng nhập hoặc Email *</label>
+            <label for="loginUsername">Tên đăng nhập hoặc SĐT</label>
             <input type="text" id="loginUsername" class="modal-input" placeholder="VD: 0912345678 hoặc tuankiet" autocomplete="username" required />
           </div>
           <div class="form-row">
-            <label for="loginPassword">Mật khẩu *</label>
+            <label for="loginPassword">Mật khẩu</label>
             <div class="password-field-wrap">
-              <input type="password" id="loginPassword" class="modal-input" placeholder="Nhập mật khẩu của bạn" autocomplete="current-password" required />
+              <input type="password" id="loginPassword" class="modal-input" placeholder="Nhập mật khẩu" autocomplete="current-password" required />
               <button type="button" class="btn-toggle-pw" data-toggle-pw="loginPassword">Hiện</button>
             </div>
           </div>
-          <button type="submit" class="btn-primary btn-auth-submit full-width" id="btnLoginSubmit">Đăng nhập vào ứng dụng</button>
+          <button type="submit" class="btn-primary btn-auth-submit full-width" id="btnLoginSubmit">Đăng nhập</button>
           <div class="auth-switch-hint">
-            <span>Lần đầu bạn sử dụng?</span>
-            <button type="button" class="btn-link-inline" id="btnSwitchToRegister">Bấm vào đây để tạo tài khoản mới →</button>
+            <span>Chưa có tài khoản?</span>
+            <button type="button" class="btn-link-inline" id="btnSwitchToRegister">Đăng ký nhanh →</button>
           </div>
         </form>
 
         <!-- Form Đăng ký người dùng mới -->
         <form id="registerForm" class="auth-form hidden">
-          <div class="auth-friendly-note">
-            👋 Điền tên của bạn và mật khẩu dễ nhớ là xong (chỉ mất 10 giây)!
+          <div class="form-row">
+            <label for="regName">Tên của bạn</label>
+            <input type="text" id="regName" class="modal-input" placeholder="VD: Cô Lan, Tuấn Kiệt..." autocomplete="name" required />
           </div>
           <div class="form-row">
-            <label for="regName">Tên của bạn (để mọi người trong nhóm nhận ra) *</label>
-            <input type="text" id="regName" class="modal-input" placeholder="VD: Nguyễn Tuấn Kiệt, Chị Lan..." autocomplete="name" required />
-          </div>
-          <div class="form-row">
-            <label for="regUsername">Số điện thoại hoặc Tên viết liền để đăng nhập *</label>
+            <label for="regUsername">Số điện thoại hoặc Tên viết liền</label>
             <input type="text" id="regUsername" class="modal-input" placeholder="VD: 0912345678 hoặc tuankiet" autocomplete="username" required />
             <div class="username-helper-row hidden" id="regUsernameHelper"></div>
           </div>
           <div class="form-row">
-            <label for="regPassword">Mật khẩu dễ nhớ * (từ 6 ký tự trở lên)</label>
+            <label for="regPassword">Mật khẩu (tối thiểu 6 ký tự)</label>
             <div class="password-field-wrap">
-              <input type="password" id="regPassword" class="modal-input" placeholder="VD: 123456 hoặc mật khẩu riêng của bạn" autocomplete="new-password" minlength="6" required />
+              <input type="password" id="regPassword" class="modal-input" placeholder="Tạo mật khẩu dễ nhớ" autocomplete="new-password" minlength="6" required />
               <button type="button" class="btn-toggle-pw" data-toggle-pw="regPassword">Hiện</button>
             </div>
           </div>
-          <div class="form-row-inline stack-on-xs">
-            <div style="flex: 1;">
-              <label for="regRole">Ghi chú / Vai trò (không bắt buộc)</label>
-              <input type="text" id="regRole" class="modal-input" placeholder="VD: Ca sáng, Thành viên..." />
-            </div>
-            <div style="flex: 1;">
-              <label>Màu đại diện bạn thích</label>
-              <div class="color-picker-row" id="regColorPicker">
-                <button type="button" class="color-swatch selected" data-color="#6366f1" style="background:#6366f1" aria-label="Màu tím"></button>
-                <button type="button" class="color-swatch" data-color="#10b981" style="background:#10b981" aria-label="Màu xanh lá"></button>
-                <button type="button" class="color-swatch" data-color="#f59e0b" style="background:#f59e0b" aria-label="Màu vàng cam"></button>
-                <button type="button" class="color-swatch" data-color="#ec4899" style="background:#ec4899" aria-label="Màu hồng"></button>
-                <button type="button" class="color-swatch" data-color="#06b6d4" style="background:#06b6d4" aria-label="Màu xanh ngọc"></button>
-                <button type="button" class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6" aria-label="Màu tím nhạt"></button>
-                <button type="button" class="color-swatch" data-color="#ef4444" style="background:#ef4444" aria-label="Màu đỏ"></button>
+          <details class="advanced-optional-box compact-details">
+            <summary>🎨 Chọn màu đại diện / vai trò (tùy chọn)</summary>
+            <div class="form-row-inline stack-on-xs" style="margin-top: 8px;">
+              <div style="flex: 1;">
+                <input type="text" id="regRole" class="modal-input" placeholder="Vai trò (VD: Ca sáng)" aria-label="Vai trò" />
+              </div>
+              <div style="flex: 1; justify-content: center;">
+                <div class="color-picker-row" id="regColorPicker">
+                  <button type="button" class="color-swatch selected" data-color="#6366f1" style="background:#6366f1" aria-label="Màu tím"></button>
+                  <button type="button" class="color-swatch" data-color="#10b981" style="background:#10b981" aria-label="Màu xanh lá"></button>
+                  <button type="button" class="color-swatch" data-color="#f59e0b" style="background:#f59e0b" aria-label="Màu vàng cam"></button>
+                  <button type="button" class="color-swatch" data-color="#ec4899" style="background:#ec4899" aria-label="Màu hồng"></button>
+                  <button type="button" class="color-swatch" data-color="#06b6d4" style="background:#06b6d4" aria-label="Màu xanh ngọc"></button>
+                  <button type="button" class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6" aria-label="Màu tím nhạt"></button>
+                  <button type="button" class="color-swatch" data-color="#ef4444" style="background:#ef4444" aria-label="Màu đỏ"></button>
+                </div>
               </div>
             </div>
-          </div>
-          <button type="submit" class="btn-primary btn-auth-submit full-width" id="btnRegisterSubmit">Tạo tài khoản & Tiếp tục →</button>
+          </details>
+          <button type="submit" class="btn-primary btn-auth-submit full-width" id="btnRegisterSubmit">Tạo tài khoản →</button>
           <div class="auth-switch-hint">
-            <span>Bạn đã có tài khoản rồi?</span>
-            <button type="button" class="btn-link-inline" id="btnSwitchToLogin">Quay lại Đăng nhập</button>
+            <span>Đã có tài khoản?</span>
+            <button type="button" class="btn-link-inline" id="btnSwitchToLogin">Đăng nhập</button>
           </div>
         </form>
       </div>
@@ -138,43 +136,35 @@
           <span class="avatar-circle" id="onboardingUserAvatar">TK</span>
           <div>
             <strong id="onboardingUserName">Xin chào!</strong>
-            <span id="onboardingUserUsername">Tài khoản mới • Chưa có nhóm nào</span>
+            <span id="onboardingUserUsername">@username</span>
           </div>
         </div>
         <button type="button" class="btn-danger-outline" id="btnOnboardingLogout">Đăng xuất</button>
       </div>
 
-      <!-- Thanh tiến trình 2 bước rõ ràng cho người mới -->
-      <div class="onboarding-stepper" aria-label="Các bước bắt đầu">
-        <div class="step-pill done">
-          <span class="step-num">✓</span>
-          <span>Bước 1: Đã tạo tài khoản</span>
-        </div>
-        <span class="step-arrow" aria-hidden="true">→</span>
-        <div class="step-pill current">
-          <span class="step-num">2</span>
-          <span>Bước 2: Chọn vào nhóm của bạn</span>
-        </div>
+      <!-- Đám mây hướng dẫn nhẹ nhàng cho tài khoản mới -->
+      <div class="onboarding-cloud-tip" id="onboardingCloudTip">
+        <span class="cloud-tip-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#38bdf8" stroke="#0284c7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+        </span>
+        <p>Chào bạn mới! Bạn chưa có nhóm nào — hãy <strong>chọn 1 trong 2 ô</strong> bên dưới để bắt đầu nhé.</p>
+        <button type="button" class="cloud-tip-close" id="btnDismissOnboardCloud" aria-label="Đóng gợi ý">&times;</button>
       </div>
 
       <div class="onboarding-main-card">
-        <div class="onboarding-intro">
-          <h2>Bạn chưa có nhóm nào. Bạn muốn bắt đầu theo cách nào?</h2>
-          <p>Hãy bấm chọn <strong>1 trong 2 cách</strong> bên dưới phù hợp với bạn:</p>
-        </div>
+        <h2 class="onboarding-minimal-title">Bạn muốn bắt đầu thế nào?</h2>
 
-        <!-- 2 nút lựa chọn lớn, ngôn ngữ đời thường dễ hiểu -->
-        <div class="onboarding-choice-grid" role="tablist" aria-label="Chọn Tạo nhóm mới hoặc Nhập mã tham gia nhóm">
+        <!-- 2 ô lựa chọn tối giản, thoáng mắt -->
+        <div class="onboarding-choice-grid" role="tablist" aria-label="Chọn Tạo nhóm mới hoặc Nhập mã nhóm">
           <button type="button" class="choice-card active" id="btnChooseCreateGroup" data-onboard-mode="create" role="tab" aria-selected="true">
             <div class="choice-card-top">
               <span class="choice-icon create-icon" aria-hidden="true">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
               </span>
-              <span class="choice-step-tag">Cách 1</span>
               <span class="choice-radio-dot" aria-hidden="true"></span>
             </div>
-            <strong>1. Tạo một nhóm mới</strong>
-            <p>Dành cho bạn nếu muốn tự lập nhóm mới, sau đó lấy mã gửi cho bạn bè vào sau.</p>
+            <strong>Tạo nhóm mới</strong>
+            <p>Tự lập nhóm & mời bạn bè</p>
           </button>
 
           <button type="button" class="choice-card" id="btnChooseJoinGroup" data-onboard-mode="join" role="tab" aria-selected="false">
@@ -182,85 +172,64 @@
               <span class="choice-icon join-icon" aria-hidden="true">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
               </span>
-              <span class="choice-step-tag emerald">Cách 2</span>
               <span class="choice-radio-dot" aria-hidden="true"></span>
             </div>
-            <strong>2. Nhập mã tham gia nhóm</strong>
-            <p>Dành cho bạn nếu bạn bè hoặc trưởng nhóm đã gửi mã mời (hoặc link) cho bạn.</p>
+            <strong>Nhập mã nhóm</strong>
+            <p>Vào nhóm khi đã có mã mời</p>
           </button>
         </div>
 
-        <!-- Khung thao tác Cách 1: Tạo nhóm mới (chỉ 1 ô nhập chính!) -->
+        <!-- Khung Cách 1: Tạo nhóm mới (tối giản 1 ô nhập) -->
         <div class="onboarding-action-panel" id="onboardingCreatePanel" role="tabpanel">
-          <div class="panel-guide-head">
-            <h3>✨ Đặt tên cho nhóm mới của bạn</h3>
-            <p>Chỉ cần nhập tên nhóm bên dưới — hệ thống sẽ tự tạo sẵn Mã mời để bạn gửi qua Zalo / Messenger.</p>
-          </div>
-
-          <div class="quick-name-chips" aria-label="Gợi ý tên nhóm nhanh">
-            <span class="quick-chip-label">Gợi ý nhanh:</span>
-            <button type="button" class="quick-name-chip" data-quick-group-name="Nhóm Bạn Bè">👥 Nhóm bạn bè</button>
-            <button type="button" class="quick-name-chip" data-quick-group-name="Lịch Ca Làm Việc">☕ Lịch ca làm</button>
-            <button type="button" class="quick-name-chip" data-quick-group-name="Nhóm Công Việc">💼 Nhóm công việc</button>
-            <button type="button" class="quick-name-chip" data-quick-group-name="Nhóm Học Tập">🎓 Nhóm học tập</button>
-            <button type="button" class="quick-name-chip" data-quick-group-name="Gia Đình Mình">🏠 Gia đình</button>
-          </div>
-
           <form id="onboardingCreateGroupForm" class="add-member-form">
             <div class="form-row">
-              <label for="onboardGroupName" class="label-lg">Tên nhóm của bạn *</label>
-              <input type="text" id="onboardGroupName" class="modal-input input-lg" placeholder="VD: Nhóm Ca Sáng, Hội Bạn Thân, Gia Đình..." required />
+              <input type="text" id="onboardGroupName" class="modal-input input-lg" placeholder="Nhập tên nhóm của bạn (VD: Ca Sáng, Bạn Thân...)" aria-label="Tên nhóm của bạn" required />
             </div>
 
-            <details class="advanced-optional-box">
-              <summary>⚙️ Cài đặt thêm: mô tả hoặc tự đặt mã riêng (không bắt buộc)</summary>
-              <div class="form-row-inline stack-on-xs" style="margin-top: 10px;">
+            <div class="quick-name-chips" aria-label="Gợi ý tên nhóm">
+              <button type="button" class="quick-name-chip" data-quick-group-name="Nhóm Bạn Bè">👥 Bạn bè</button>
+              <button type="button" class="quick-name-chip" data-quick-group-name="Lịch Ca Làm Việc">☕ Ca làm</button>
+              <button type="button" class="quick-name-chip" data-quick-group-name="Nhóm Công Việc">💼 Công việc</button>
+              <button type="button" class="quick-name-chip" data-quick-group-name="Gia Đình Mình">🏠 Gia đình</button>
+            </div>
+
+            <details class="advanced-optional-box compact-details">
+              <summary>Tùy chọn thêm (mã riêng / mô tả)</summary>
+              <div class="form-row-inline stack-on-xs" style="margin-top: 8px;">
                 <div style="flex: 1;">
-                  <label for="onboardGroupCode">Tự đặt mã nhóm (để trống hệ thống tự tạo)</label>
-                  <input type="text" id="onboardGroupCode" class="modal-input" placeholder="VD: NHOM01" />
+                  <input type="text" id="onboardGroupCode" class="modal-input" placeholder="Mã riêng (để trống tự tạo)" aria-label="Mã riêng" />
                 </div>
-                <div style="flex: 1.4;">
-                  <label for="onboardGroupDesc">Mô tả ngắn cho nhóm</label>
-                  <input type="text" id="onboardGroupDesc" class="modal-input" placeholder="VD: Xem lịch rảnh đi cà phê / ca trực" />
+                <div style="flex: 1.3;">
+                  <input type="text" id="onboardGroupDesc" class="modal-input" placeholder="Mô tả ngắn" aria-label="Mô tả ngắn" />
                 </div>
               </div>
             </details>
 
             <button type="submit" class="btn-primary btn-onboarding-cta full-width" id="btnOnboardCreateSubmit">
-              ➕ Tạo nhóm mới & Lấy mã mời bạn bè →
+              Tạo nhóm mới →
             </button>
           </form>
         </div>
 
-        <!-- Khung thao tác Cách 2: Nhập mã để tham gia nhóm -->
+        <!-- Khung Cách 2: Nhập mã nhóm (tối giản 1 ô nhập + Dán) -->
         <div class="onboarding-action-panel hidden" id="onboardingJoinPanel" role="tabpanel">
-          <div class="panel-guide-head">
-            <h3>🔑 Nhập mã nhóm bạn được mời</h3>
-            <p>Nhập mã nhóm (ví dụ: <strong>FT8K2M</strong>) hoặc bấm nút <strong>Dán mã</strong> nếu bạn vừa sao chép tin nhắn / đường link mời từ Zalo, Messenger.</p>
-          </div>
-
           <form id="onboardingJoinGroupForm" class="add-member-form">
-            <div class="form-row">
-              <label for="onboardJoinCode" class="label-lg">Mã nhóm hoặc Link mời *</label>
-              <div class="join-code-input-group">
-                <input type="text" id="onboardJoinCode" class="modal-input input-lg join-code-field" placeholder="Nhập mã (VD: FT8K2M) hoặc dán link vào đây..." autocomplete="off" required />
-                <button type="button" class="btn-paste-code" id="btnPasteJoinCode" title="Dán mã hoặc link bạn vừa sao chép">
-                  📋 Dán mã
-                </button>
-              </div>
+            <div class="join-code-input-group">
+              <input type="text" id="onboardJoinCode" class="modal-input input-lg join-code-field" placeholder="Nhập mã (VD: FT8K2M) hoặc dán link..." aria-label="Mã nhóm hoặc link mời" autocomplete="off" required />
+              <button type="button" class="btn-paste-code" id="btnPasteJoinCode" title="Dán mã hoặc link đã sao chép">
+                📋 Dán
+              </button>
             </div>
 
-            <!-- Khung xem trước tên nhóm trực tiếp khi gõ/dán mã -->
             <div class="join-group-preview hidden" id="onboardJoinPreview" aria-live="polite"></div>
 
             <button type="submit" class="btn-primary btn-emerald-cta btn-onboarding-cta full-width" id="btnOnboardJoinSubmit">
-              🚀 Vào nhóm & Trò chuyện ngay →
+              Vào nhóm ngay →
             </button>
           </form>
         </div>
 
-        <div class="demo-room-hint">
-          <span>💡 Bạn chưa có mã mời và muốn xem thử giao diện mẫu trước?</span>
+        <div class="demo-minimal-row">
           <button type="button" class="btn-link-sm" id="btnTryDemoGroup">Xem thử nhóm mẫu #TEAM01 →</button>
         </div>
       </div>
@@ -332,24 +301,14 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
           </div>
           <div class="section-title-copy">
-            <h2>Lịch làm việc của nhóm</h2>
-            <p>Nhấn vào từng ô giờ để đăng ký lịch bận của <strong id="toolbarMemberName">bạn</strong> <span class="hide-xs">— giờ trống chung được tính tự động.</span></p>
+            <h2>Lịch nhóm</h2>
+            <p>Chọn ô giờ bận của <strong id="toolbarMemberName">bạn</strong></p>
           </div>
         </div>
         <div class="sync-badge" id="syncStatusIndicator">
           <span class="sync-dot"></span>
           <span id="syncStatusText">Đã đồng bộ</span>
         </div>
-      </div>
-
-      <!-- Hướng dẫn nhanh 3 bước cho người mới (có thể tắt) -->
-      <div class="beginner-guide-banner" id="beginnerGuideBanner">
-        <div class="beginner-guide-steps">
-          <span class="guide-chip"><strong>1.</strong> Bấm vào ô giờ bạn <em>bận</em></span>
-          <span class="guide-chip"><strong>2.</strong> Ô màu xanh lá là <em>cả nhóm cùng rảnh</em></span>
-          <span class="guide-chip"><strong>3.</strong> Bấm <button type="button" class="btn-guide-inline" id="btnGuideOpenInvite">+ Mời bạn</button> để gọi mọi người vào nhóm</span>
-        </div>
-        <button type="button" class="btn-guide-dismiss" id="btnDismissGuide" title="Ẩn hướng dẫn này">Đã hiểu ✕</button>
       </div>
 
       <!-- Thanh công cụ -->
@@ -437,14 +396,13 @@
       <div class="grid-legend-bar">
         <div class="legend-items">
           <span class="legend-item"><i class="swatch swatch-my-busy"></i> Bạn bận</span>
-          <span class="legend-item"><i class="swatch swatch-100"></i> Cả nhóm trống</span>
-          <span class="legend-item"><i class="swatch swatch-partial"></i> Một phần trống</span>
-          <span class="legend-item hide-xs"><i class="swatch swatch-none"></i> Kín lịch</span>
+          <span class="legend-item"><i class="swatch swatch-100"></i> Cả nhóm rảnh</span>
+          <span class="legend-item"><i class="swatch swatch-partial"></i> Rảnh một phần</span>
         </div>
-        <span class="legend-hint">
-          Nhấn vào từng ô để chọn / bỏ chọn ·
-          <button type="button" class="btn-link-sm hidden" id="btnShowGuideAgain">Xem lại hướng dẫn</button>
-        </span>
+        <button type="button" class="btn-cloud-help" id="btnReplayCloudTour" title="Xem lại đám mây hướng dẫn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#38bdf8" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+          <span>Hướng dẫn</span>
+        </button>
       </div>
 
       <!-- Bộ chọn ngày nhanh cho điện thoại -->
@@ -470,8 +428,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           </div>
           <div>
-            <h2>Trò chuyện chung của nhóm</h2>
-            <p>Chỉ các thành viên trong nhóm này</p>
+            <h2>Trò chuyện nhóm</h2>
           </div>
         </div>
         <span class="online-badge" id="chatOnlineBadge">1 online</span>
@@ -694,43 +651,70 @@
     </div>
   </div>
 
-  <!-- MODAL 4: Chúc mừng Tạo nhóm xong & Mời bạn bè siêu dễ qua Zalo / Messenger -->
+  <!-- MODAL 4: Mời bạn bè siêu gọn -->
   <div id="groupCreatedModal" class="modal-backdrop hidden">
     <div class="modal-card invite-celebration-modal">
       <div class="modal-sheet-handle" aria-hidden="true"></div>
       <div class="modal-header">
         <div>
-          <span class="modal-tag" id="inviteModalTag">MỜI BẠN BÈ VÀO NHÓM</span>
+          <span class="modal-tag" id="inviteModalTag">MÃ NHÓM CỦA BẠN</span>
           <h3 id="inviteModalHeading">🎉 Tạo nhóm thành công!</h3>
         </div>
         <button class="modal-close-btn" data-close="groupCreatedModal" aria-label="Đóng">&times;</button>
       </div>
       <div class="modal-body">
         <p class="modal-desc" id="inviteModalSubtext">
-          Hãy gửi lời mời qua Zalo / Messenger hoặc đọc Mã nhóm bên dưới để bạn bè vào chung bảng lịch & phòng trò chuyện nhé:
+          Gửi mã hoặc link này cho bạn bè để cùng vào nhóm:
         </p>
 
         <div class="created-ticket-box">
           <div class="created-group-title" id="createdGroupNameDisplay">Nhóm Của Bạn</div>
-          <div class="created-code-caption">MÃ THAM GIA NHÓM</div>
           <div class="created-code-giant" id="createdGroupCodeBig">FT8K2M</div>
-          <div class="created-code-tip">Bạn bè chỉ cần bấm vào Link mời hoặc nhập mã này là vào được ngay!</div>
         </div>
 
         <div class="invite-easy-buttons">
           <button type="button" class="btn-primary btn-share-zalo full-width" id="btnShareInviteMessage">
-            💬 Gửi / Sao chép lời mời qua Zalo, Messenger
+            💬 Gửi lời mời qua Zalo / Messenger
           </button>
           <div class="invite-secondary-grid">
-            <button type="button" class="btn-secondary" id="btnCopyCreatedCode">📋 Chỉ chép Mã nhóm</button>
-            <button type="button" class="btn-secondary" id="btnCopyCreatedLink">🔗 Chỉ chép Link nhóm</button>
+            <button type="button" class="btn-secondary" id="btnCopyCreatedCode">📋 Chép mã</button>
+            <button type="button" class="btn-secondary" id="btnCopyCreatedLink">🔗 Chép link</button>
           </div>
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn-outline full-width" data-close="groupCreatedModal">
-          Bắt đầu xem bảng lịch & phòng trò chuyện →
+          Vào bảng lịch →
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ĐÁM MÂY HƯỚNG DẪN LẦN ĐẦU (CLOUD COACHMARK TOUR) ==================== -->
+  <div id="cloudTourLayer" class="cloud-tour-layer hidden" role="dialog" aria-modal="false" aria-label="Đám mây hướng dẫn người mới">
+    <div id="cloudTourBackdrop" class="cloud-tour-backdrop"></div>
+    <div id="cloudTourSpotlight" class="cloud-tour-spotlight"></div>
+    <div id="cloudTourBubble" class="cloud-tour-bubble" data-arrow="top">
+      <span class="cloud-puff puff-1" aria-hidden="true"></span>
+      <span class="cloud-puff puff-2" aria-hidden="true"></span>
+      <div class="cloud-tour-arrow" id="cloudTourArrow" aria-hidden="true"></div>
+
+      <div class="cloud-tour-top">
+        <span class="cloud-tour-pill">
+          <span class="cloud-emoji" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="#38bdf8" stroke="#0284c7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+          </span>
+          <span id="cloudTourStepLabel">Bước 1/4</span>
+        </span>
+        <button type="button" class="cloud-tour-skip" id="btnCloudTourSkip">Bỏ qua</button>
+      </div>
+
+      <h4 class="cloud-tour-title" id="cloudTourTitle">Chấm chọn giờ bận</h4>
+      <p class="cloud-tour-text" id="cloudTourText">Bấm vào ô giờ bạn bận. Ô màu xanh lá là lúc cả nhóm cùng rảnh!</p>
+
+      <div class="cloud-tour-footer">
+        <div class="cloud-tour-dots" id="cloudTourDots" aria-hidden="true"></div>
+        <button type="button" class="btn-cloud-next" id="btnCloudTourNext">Tiếp theo →</button>
       </div>
     </div>
   </div>
