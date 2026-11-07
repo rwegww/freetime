@@ -588,7 +588,16 @@ function setPaintMode(mode) {
 }
 
 function switchMobileTab(tab) {
+  if (tab === 'schedule') {
+    tab = state.calendarScope || 'personal';
+  }
   state.activeMobileTab = tab;
+  if (tab === 'personal' || tab === 'team') {
+    state.calendarScope = tab;
+    try {
+      localStorage.setItem('freetime_calendar_scope', tab);
+    } catch (_) {}
+  }
   document.body.dataset.mobileTab = tab;
   document.querySelectorAll('.mobile-nav-item[data-tab]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tab === tab);
@@ -601,6 +610,8 @@ function switchMobileTab(tab) {
       const container = document.getElementById('chatMessagesList');
       if (container) container.scrollTop = container.scrollHeight;
     });
+  } else {
+    renderUnifiedScheduleSection();
   }
 }
 
@@ -1402,6 +1413,22 @@ function bindWorkspaceEvents() {
 
   document.querySelectorAll('.mobile-nav-item[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => switchMobileTab(btn.dataset.tab));
+  });
+
+  // Chuyển đổi phạm vi hiển thị: Lịch cá nhân vs Lịch nhóm
+  document.querySelectorAll('[data-calendar-scope]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const scope = btn.dataset.calendarScope;
+      state.calendarScope = scope;
+      try {
+        localStorage.setItem('freetime_calendar_scope', scope);
+      } catch (_) {}
+      if (window.innerWidth <= 960) {
+        switchMobileTab(scope);
+      } else {
+        renderUnifiedScheduleSection();
+      }
+    });
   });
 
   // Chuyển đổi chế độ xem lịch: 3 Ca (7-12, 12-5, 5-10h) hoặc Từng giờ (15h)

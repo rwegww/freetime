@@ -468,6 +468,11 @@ kbd {
   font-variant-numeric: tabular-nums;
 }
 
+.mobile-nav-pill-personal {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
 .mobile-nav-icon-wrap {
   position: relative;
   display: inline-flex;
@@ -890,6 +895,8 @@ kbd {
     gap: 0;
   }
 
+  body[data-mobile-tab="personal"] .section-chat,
+  body[data-mobile-tab="team"] .section-chat,
   body[data-mobile-tab="schedule"] .section-chat {
     display: none;
   }
@@ -905,8 +912,8 @@ kbd {
 
   .mobile-bottom-nav {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
   }
 
   .toast-container {

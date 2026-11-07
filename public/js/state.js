@@ -11,12 +11,13 @@ export const state = {
   currentWeekMonday: getMondayOfDate(new Date()),
   selectedFilterMemberIds: new Set(),
   paintMode: 'busy', // 'busy' | 'free' | 'inspect'
+  calendarScope: (typeof window !== 'undefined' && window.localStorage && localStorage.getItem('freetime_calendar_scope')) || 'personal', // 'personal' | 'team'
   calendarViewMode: (typeof window !== 'undefined' && window.localStorage && localStorage.getItem('freetime_calendar_view')) || 'shifts', // 'shifts' | 'hours'
   selectedColor: '#6366f1',
   profileColor: '#6366f1',
   inspectedSlot: null,
   typingTimeout: null,
-  activeMobileTab: 'schedule', // 'schedule' | 'chat'
+  activeMobileTab: (typeof window !== 'undefined' && window.localStorage && localStorage.getItem('freetime_calendar_scope')) || 'personal', // 'personal' | 'team' | 'chat'
   unreadChatCount: 0,
   mobileDayFilter: 'all', // 'all' | 0..6
   mobileToolsOpen: false,

@@ -202,8 +202,55 @@ export function renderUnifiedScheduleSection() {
   renderMobileDayStrip();
 
   const isShifts = state.calendarViewMode !== 'hours';
+  const isPersonalScope = (state.calendarScope || 'personal') === 'personal';
+
   const table = document.getElementById('unifiedScheduleTable');
-  if (table) table.dataset.calendarView = isShifts ? 'shifts' : 'hours';
+  if (table) {
+    table.dataset.calendarView = isShifts ? 'shifts' : 'hours';
+    table.dataset.calendarScope = isPersonalScope ? 'personal' : 'team';
+  }
+  const scheduleCard = document.getElementById('scheduleSectionCard');
+  if (scheduleCard) {
+    scheduleCard.dataset.calendarScope = isPersonalScope ? 'personal' : 'team';
+  }
+
+  const btnScopePersonal = document.getElementById('btnScopePersonal');
+  const btnScopeTeam = document.getElementById('btnScopeTeam');
+  if (btnScopePersonal) {
+    btnScopePersonal.classList.toggle('active', isPersonalScope);
+    btnScopePersonal.setAttribute('aria-selected', String(isPersonalScope));
+  }
+  if (btnScopeTeam) {
+    btnScopeTeam.classList.toggle('active', !isPersonalScope);
+    btnScopeTeam.setAttribute('aria-selected', String(!isPersonalScope));
+  }
+
+  const scopeBadge = document.getElementById('scopeContextBadge');
+  const scopeDesc = document.getElementById('scopeContextDesc');
+  if (scopeBadge) {
+    scopeBadge.textContent = isPersonalScope ? '👤 Lịch của bạn' : '👥 Lịch tổng hợp nhóm';
+  }
+  if (scopeDesc) {
+    scopeDesc.textContent = isPersonalScope
+      ? 'Chỉ hiển thị lịch bận & giờ trống của riêng bạn'
+      : 'Tổng hợp lịch làm việc & tìm giờ rảnh chung cả nhóm';
+  }
+
+  const legendItemsGroup = document.getElementById('legendItemsGroup');
+  if (legendItemsGroup) {
+    if (isPersonalScope) {
+      legendItemsGroup.innerHTML = `
+        <span class="legend-item"><i class="swatch swatch-my-busy"></i> Bạn bận</span>
+        <span class="legend-item"><i class="swatch swatch-my-free"></i> Bạn rảnh</span>
+      `;
+    } else {
+      legendItemsGroup.innerHTML = `
+        <span class="legend-item"><i class="swatch swatch-my-busy"></i> Bạn bận</span>
+        <span class="legend-item"><i class="swatch swatch-100"></i> Nhóm rảnh</span>
+        <span class="legend-item"><i class="swatch swatch-partial"></i> Rảnh 1 phần</span>
+      `;
+    }
+  }
 
   const btnShifts = document.getElementById('btnViewShifts');
   const btnHours = document.getElementById('btnViewHours');
@@ -317,74 +364,128 @@ export function renderUnifiedScheduleSection() {
         td.dataset.shift = shift.id;
         const classes = ['unified-slot-cell', 'shift-slot-cell'];
 
-        if (isPast) {
-          classes.push('is-past-day');
-          if (isMyBusy) {
+        if (isPersonalScope) {
+          // ==================== LỊCH CÁ NHÂN: Chỉ hiện trạng thái của bạn, không lẫn thông tin nhóm ====================
+          if (isPast) {
+            classes.push('is-past-day');
+            if (isMyBusy) {
+              classes.push('cell-my-busy');
+            } else {
+              classes.push('cell-past-locked');
+            }
+          } else if (isMyBusy) {
             classes.push('cell-my-busy');
           } else {
-            classes.push('cell-past-locked');
+            classes.push('cell-my-free');
           }
-        } else if (isMyBusy) {
-          classes.push('cell-my-busy');
-        } else if (isAllFree) {
-          classes.push('cell-all-free');
-        } else if (info.freeCount > 0) {
-          classes.push('cell-partial');
-        } else {
-          classes.push('cell-none');
-        }
 
-        if (d === todayIndex) {
-          classes.push('is-today');
-          if (nowHour >= shift.startHour && nowHour < shift.endHour) {
-            classes.push('is-now-shift-cell');
+          if (d === todayIndex) {
+            classes.push('is-today');
+            if (nowHour >= shift.startHour && nowHour < shift.endHour) {
+              classes.push('is-now-shift-cell');
+            }
           }
-        }
 
-        td.className = classes.join(' ');
+          td.className = classes.join(' ');
 
-        const freeNames = info.freeMembers.map(m => m.name).join(', ') || 'Không ai';
-        td.title = `${DAY_NAMES[d]} • Ca ${shift.name} (${shift.rangeLabel})\n` +
-          `Trống ${info.freeCount}/${info.total}: ${freeNames}` +
-          (isMyBusy ? `\nBạn: ${myBusyNote} (${myBusyEntries.length}/${shift.hours.length}h)` : '') +
-          (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
+          td.title = `${DAY_NAMES[d]} • Ca ${shift.name} (${shift.rangeLabel})\n` +
+            (isMyBusy ? `Bạn: ${myBusyNote} (${myBusyEntries.length}/${shift.hours.length}h)` : 'Bạn: Rảnh ca này') +
+            (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
 
-        let statusHtml = '';
-        if (isMyBusy) {
-          const frac = !isMyFullyBusy ? `<small class="shift-frac">(${myBusyEntries.length}/5h)</small>` : '';
-          statusHtml = `<span class="shift-cell-label shift-label-busy">📌 ${escapeHtml(myBusyNote)}${frac}</span>`;
-        } else if (isPast) {
-          statusHtml = `<span class="shift-cell-label shift-label-past">Đã qua</span>`;
-        } else if (isAllFree) {
-          statusHtml = `<span class="shift-cell-label shift-label-free">✨ Nhóm rảnh</span>`;
-        } else if (info.freeCount > 0) {
-          statusHtml = `<span class="shift-cell-label shift-label-partial">⚡ Trống ${info.freeCount}/${info.total}</span>`;
+          let statusHtml = '';
+          if (isMyBusy) {
+            const frac = !isMyFullyBusy ? `<small class="shift-frac">(${myBusyEntries.length}/5h)</small>` : '';
+            statusHtml = `<span class="shift-cell-label shift-label-busy">📌 ${escapeHtml(myBusyNote)}${frac}</span>`;
+          } else if (isPast) {
+            statusHtml = `<span class="shift-cell-label shift-label-past">Đã qua</span>`;
+          } else {
+            statusHtml = `<span class="shift-cell-label shift-label-my-free">✨ Rảnh</span>`;
+          }
+
+          td.innerHTML = `
+            <div class="shift-cell-inner">
+              <div class="shift-cell-header">
+                <span class="shift-cell-tag">${shift.badgeText}</span>
+              </div>
+              <div class="shift-cell-main">
+                ${statusHtml}
+              </div>
+              <div class="shift-cell-footer">
+                <span class="shift-personal-status">${isMyBusy ? 'Đã xếp bận' : 'Rảnh'}</span>
+              </div>
+            </div>
+          `;
         } else {
-          statusHtml = `<span class="shift-cell-label shift-label-none">Bận cả nhóm</span>`;
+          // ==================== LỊCH NHÓM: Tổng hợp tỷ lệ rảnh & avatar của tất cả thành viên ====================
+          if (isPast) {
+            classes.push('is-past-day');
+            if (isMyBusy) {
+              classes.push('cell-my-busy');
+            } else {
+              classes.push('cell-past-locked');
+            }
+          } else if (isMyBusy) {
+            classes.push('cell-my-busy');
+          } else if (isAllFree) {
+            classes.push('cell-all-free');
+          } else if (info.freeCount > 0) {
+            classes.push('cell-partial');
+          } else {
+            classes.push('cell-none');
+          }
+
+          if (d === todayIndex) {
+            classes.push('is-today');
+            if (nowHour >= shift.startHour && nowHour < shift.endHour) {
+              classes.push('is-now-shift-cell');
+            }
+          }
+
+          td.className = classes.join(' ');
+
+          const freeNames = info.freeMembers.map(m => m.name).join(', ') || 'Không ai';
+          td.title = `${DAY_NAMES[d]} • Ca ${shift.name} (${shift.rangeLabel})\n` +
+            `Trống ${info.freeCount}/${info.total}: ${freeNames}` +
+            (isMyBusy ? `\nBạn: ${myBusyNote} (${myBusyEntries.length}/${shift.hours.length}h)` : '') +
+            (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
+
+          let statusHtml = '';
+          if (isMyBusy) {
+            const frac = !isMyFullyBusy ? `<small class="shift-frac">(${myBusyEntries.length}/5h)</small>` : '';
+            statusHtml = `<span class="shift-cell-label shift-label-busy">📌 ${escapeHtml(myBusyNote)}${frac}</span>`;
+          } else if (isPast) {
+            statusHtml = `<span class="shift-cell-label shift-label-past">Đã qua</span>`;
+          } else if (isAllFree) {
+            statusHtml = `<span class="shift-cell-label shift-label-free">✨ Nhóm rảnh</span>`;
+          } else if (info.freeCount > 0) {
+            statusHtml = `<span class="shift-cell-label shift-label-partial">⚡ Trống ${info.freeCount}/${info.total}</span>`;
+          } else {
+            statusHtml = `<span class="shift-cell-label shift-label-none">Bận cả nhóm</span>`;
+          }
+
+          const freeAvatarsHtml = !isPast && !isMyBusy && !isAllFree && info.freeMembers.length > 0
+            ? info.freeMembers
+                .slice(0, 3)
+                .map(m => renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'mini-dot' }))
+                .join('')
+            : '';
+
+          td.innerHTML = `
+            <div class="shift-cell-inner">
+              <div class="shift-cell-header">
+                <span class="shift-cell-tag">${shift.badgeText}</span>
+                <span class="shift-cell-ratio">${info.freeCount}/${info.total}</span>
+              </div>
+              <div class="shift-cell-main">
+                ${statusHtml}
+              </div>
+              <div class="shift-cell-footer">
+                <div class="shift-cell-avatars">${freeAvatarsHtml}</div>
+                <button type="button" class="btn-cell-inspect" title="Xem chi tiết ca ${shift.name} (${shift.rangeLabel})">i</button>
+              </div>
+            </div>
+          `;
         }
-
-        const freeAvatarsHtml = !isPast && !isMyBusy && !isAllFree && info.freeMembers.length > 0
-          ? info.freeMembers
-              .slice(0, 3)
-              .map(m => renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'mini-dot' }))
-              .join('')
-          : '';
-
-        td.innerHTML = `
-          <div class="shift-cell-inner">
-            <div class="shift-cell-header">
-              <span class="shift-cell-tag">${shift.badgeText}</span>
-              <span class="shift-cell-ratio">${info.freeCount}/${info.total}</span>
-            </div>
-            <div class="shift-cell-main">
-              ${statusHtml}
-            </div>
-            <div class="shift-cell-footer">
-              <div class="shift-cell-avatars">${freeAvatarsHtml}</div>
-              <button type="button" class="btn-cell-inspect" title="Xem chi tiết ca ${shift.name} (${shift.rangeLabel})">i</button>
-            </div>
-          </div>
-        `;
 
         bindShiftCellInteractions(td, d, shift);
         tr.appendChild(td);
@@ -421,71 +522,119 @@ export function renderUnifiedScheduleSection() {
         td.dataset.day = String(d);
         const classes = ['unified-slot-cell'];
         let isBlockCont = false;
-        if (isPast) {
-          classes.push('is-past-day');
-          if (isMyBusy) {
+
+        if (isPersonalScope) {
+          // ==================== LỊCH CÁ NHÂN: Chỉ hiện trạng thái của bạn, không lẫn thông tin nhóm ====================
+          if (isPast) {
+            classes.push('is-past-day');
+            if (isMyBusy) {
+              classes.push('cell-my-busy');
+              isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
+            } else {
+              classes.push('cell-past-locked');
+              isBlockCont = h > START_HOUR && !isMyBusyAt(d, h - 1);
+            }
+          } else if (isMyBusy) {
             classes.push('cell-my-busy');
             isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
           } else {
-            classes.push('cell-past-locked');
-            isBlockCont = h > START_HOUR && !isMyBusyAt(d, h - 1);
+            classes.push('cell-my-free');
           }
-        } else if (isMyBusy) {
-          classes.push('cell-my-busy');
-          isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
-        } else if (isAllFree) {
-          classes.push('cell-all-free');
-          isBlockCont = isAllFreeAt(d, h - 1);
-        } else if (info.freeCount > 0) {
-          classes.push('cell-partial');
+
+          if (isBlockCont) classes.push('block-cont');
+          if (d === todayIndex) classes.push('is-today');
+          if (d === todayIndex && h === nowHour) {
+            classes.push('is-now');
+            td.style.setProperty('--now-offset', `${nowOffsetPct}%`);
+          }
+          td.className = classes.join(' ');
+
+          td.title = `${DAY_NAMES[d]} • ${formatHourRange(h)}\n` +
+            (isMyBusy ? `Bạn: ${myBusyNote}` : 'Bạn: Rảnh') +
+            (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
+
+          let labelHtml = '';
+          if (isMyBusy) {
+            labelHtml = !isBlockCont
+              ? `<span class="cell-label">${escapeHtml(myBusyNote)}</span>`
+              : `<span class="cell-label"></span>`;
+          } else {
+            labelHtml = `<span class="cell-label"></span>`;
+          }
+
+          td.innerHTML = `
+            <div class="cell-inner">
+              ${labelHtml}
+            </div>
+          `;
         } else {
-          classes.push('cell-none');
+          // ==================== LỊCH NHÓM: Tổng hợp tỷ lệ rảnh & avatar của tất cả thành viên ====================
+          if (isPast) {
+            classes.push('is-past-day');
+            if (isMyBusy) {
+              classes.push('cell-my-busy');
+              isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
+            } else {
+              classes.push('cell-past-locked');
+              isBlockCont = h > START_HOUR && !isMyBusyAt(d, h - 1);
+            }
+          } else if (isMyBusy) {
+            classes.push('cell-my-busy');
+            isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
+          } else if (isAllFree) {
+            classes.push('cell-all-free');
+            isBlockCont = isAllFreeAt(d, h - 1);
+          } else if (info.freeCount > 0) {
+            classes.push('cell-partial');
+          } else {
+            classes.push('cell-none');
+          }
+          if (isBlockCont) classes.push('block-cont');
+          if (d === todayIndex) classes.push('is-today');
+          if (d === todayIndex && h === nowHour) {
+            classes.push('is-now');
+            td.style.setProperty('--now-offset', `${nowOffsetPct}%`);
+          }
+          td.className = classes.join(' ');
+
+          const freeNames = info.freeMembers.map(m => m.name).join(', ') || 'Không ai';
+          td.title = `${DAY_NAMES[d]} • ${formatHourRange(h)}\nTrống ${info.freeCount}/${info.total}: ${freeNames}` +
+            (isMyBusy ? `\nBạn: ${myBusyNote}` : '') +
+            (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
+
+          let labelHtml = '';
+          if (isMyBusy) {
+            labelHtml = !isBlockCont
+              ? `<span class="cell-label">${escapeHtml(myBusyNote)}</span>`
+              : `<span class="cell-label"></span>`;
+          } else if (isPast) {
+            labelHtml = `<span class="cell-label"></span>`;
+          } else if (isAllFree && !isBlockCont) {
+            labelHtml = `<span class="cell-label cell-free-text">Nhóm rảnh</span>`;
+          } else if (!isMyBusy && !isAllFree && info.freeCount > 0) {
+            labelHtml = `<span class="cell-label cell-partial-names">Trống: ${escapeHtml(freeNames)}</span>`;
+          } else {
+            labelHtml = `<span class="cell-label"></span>`;
+          }
+
+          const freeAvatarsHtml = !isPast && !isMyBusy && !isAllFree
+            ? info.freeMembers
+              .slice(0, 3)
+              .map(m => renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'mini-dot' }))
+              .join('')
+            : '';
+
+          td.innerHTML = `
+            <div class="cell-inner">
+              ${labelHtml}
+              <span class="cell-right">
+                <span class="cell-avatars">${freeAvatarsHtml}</span>
+                <span class="cell-ratio">${info.freeCount}/${info.total}</span>
+                <button type="button" class="btn-cell-inspect" title="Xem chi tiết ai rảnh / ai bận & đề xuất lịch hẹn">i</button>
+              </span>
+            </div>
+          `;
         }
-        if (isBlockCont) classes.push('block-cont');
-        if (d === todayIndex) classes.push('is-today');
-        if (d === todayIndex && h === nowHour) {
-          classes.push('is-now');
-          td.style.setProperty('--now-offset', `${nowOffsetPct}%`);
-        }
-        td.className = classes.join(' ');
-
-        const freeNames = info.freeMembers.map(m => m.name).join(', ') || 'Không ai';
-        td.title = `${DAY_NAMES[d]} • ${formatHourRange(h)}\nTrống ${info.freeCount}/${info.total}: ${freeNames}` +
-          (isMyBusy ? `\nBạn: ${myBusyNote}` : '') +
-          (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
-
-        let labelHtml = '';
-        if (isMyBusy) {
-          labelHtml = !isBlockCont
-            ? `<span class="cell-label">${escapeHtml(myBusyNote)}</span>`
-            : `<span class="cell-label"></span>`;
-        } else if (isPast) {
-          labelHtml = `<span class="cell-label"></span>`;
-        } else if (isAllFree && !isBlockCont) {
-          labelHtml = `<span class="cell-label cell-free-text">Nhóm rảnh</span>`;
-        } else if (!isMyBusy && !isAllFree && info.freeCount > 0) {
-          labelHtml = `<span class="cell-label cell-partial-names">Trống: ${escapeHtml(freeNames)}</span>`;
-        } else {
-          labelHtml = `<span class="cell-label"></span>`;
-        }
-
-        const freeAvatarsHtml = !isPast && !isMyBusy && !isAllFree
-          ? info.freeMembers
-            .slice(0, 3)
-            .map(m => renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'mini-dot' }))
-            .join('')
-          : '';
-
-        td.innerHTML = `
-          <div class="cell-inner">
-            ${labelHtml}
-            <span class="cell-right">
-              <span class="cell-avatars">${freeAvatarsHtml}</span>
-              <span class="cell-ratio">${info.freeCount}/${info.total}</span>
-              <button type="button" class="btn-cell-inspect" title="Xem chi tiết ai rảnh / ai bận & đề xuất lịch hẹn">i</button>
-            </span>
-          </div>
-        `;
 
         bindSlotCellInteractions(td, d, h);
         tr.appendChild(td);
@@ -506,6 +655,8 @@ export function renderUnifiedScheduleSection() {
     const myFree = totalSlots - myBusy;
     document.getElementById('statMyBusyHours').textContent = `${myBusy}h bận`;
     document.getElementById('statMyFreeHours').textContent = `${myFree}h trống`;
+    const mobilePersonalBadge = document.getElementById('mobileTabPersonalBadge');
+    if (mobilePersonalBadge) mobilePersonalBadge.textContent = `${myBusy}h bận`;
   }
 
   renderBestContinuousSlots(targetMembers);

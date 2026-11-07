@@ -322,6 +322,25 @@
   <main class="main-two-sections">
     <!-- ==================== PHẦN 1: ĐĂNG KÝ LỊCH LÀM VIỆC & SUY RA GIỜ TRỐNG ==================== -->
     <section class="section-schedule card" id="scheduleSectionCard">
+      <!-- Thanh chuyển đổi Trang Lịch cá nhân / Lịch nhóm -->
+      <div class="calendar-scope-bar">
+        <div class="calendar-scope-switcher" role="tablist" aria-label="Phạm vi hiển thị lịch">
+          <button type="button" class="scope-pill active" id="btnScopePersonal" data-calendar-scope="personal" role="tab" aria-selected="true" title="Chỉ hiển thị lịch bận & giờ trống của riêng bạn, không lẫn thông tin nhóm">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Lịch cá nhân</span>
+          </button>
+          <button type="button" class="scope-pill" id="btnScopeTeam" data-calendar-scope="team" role="tab" aria-selected="false" title="Xem tổng hợp lịch làm việc & giờ trống của tất cả thành viên trong nhóm">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Lịch nhóm</span>
+          </button>
+        </div>
+
+        <div class="scope-context-info" id="scopeContextInfo">
+          <span class="scope-context-badge" id="scopeContextBadge">👤 Lịch riêng của bạn</span>
+          <span class="scope-context-desc" id="scopeContextDesc">Chỉ hiển thị lịch bận &amp; giờ trống của bạn</span>
+        </div>
+      </div>
+
       <!-- Thanh thao tác gọn trên đầu lịch -->
       <div class="register-toolbar">
         <div class="toolbar-primary-row">
@@ -430,10 +449,9 @@
           </button>
         </div>
 
-        <div class="legend-items">
+        <div class="legend-items" id="legendItemsGroup">
           <span class="legend-item"><i class="swatch swatch-my-busy"></i> Bạn bận</span>
-          <span class="legend-item"><i class="swatch swatch-100"></i> Nhóm rảnh</span>
-          <span class="legend-item"><i class="swatch swatch-partial"></i> Rảnh 1 phần</span>
+          <span class="legend-item"><i class="swatch swatch-my-free"></i> Bạn rảnh</span>
         </div>
         <span class="legend-hint" id="gridZoomHint">Chạm thứ để xem 1 ngày</span>
       </div>
@@ -510,14 +528,19 @@
 
   <!-- Thanh điều hướng dưới cùng cho Mobile & Tablet dọc -->
   <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Chuyển màn hình">
-    <button type="button" id="btnTabSchedule" class="mobile-nav-item active" data-tab="schedule">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+    <button type="button" id="btnTabPersonal" class="mobile-nav-item" data-tab="personal">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span>Lịch của tôi</span>
+      <span class="mobile-nav-pill mobile-nav-pill-personal" id="mobileTabPersonalBadge">0h bận</span>
+    </button>
+    <button type="button" id="btnTabSchedule" class="mobile-nav-item" data-tab="team">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       <span>Lịch nhóm</span>
       <span class="mobile-nav-pill" id="mobileTabFreeBadge">0 trống</span>
     </button>
     <button type="button" id="btnTabChat" class="mobile-nav-item" data-tab="chat">
       <div class="mobile-nav-icon-wrap">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span class="mobile-unread-badge hidden" id="mobileChatUnreadBadge">0</span>
       </div>
       <span>Nhắn tin</span>

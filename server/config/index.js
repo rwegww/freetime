@@ -51,7 +51,10 @@ const config = {
   },
   googleClientId: isTestEnv
     ? (process.env.TEST_GOOGLE_CLIENT_ID || '').trim()
-    : (process.env.GOOGLE_CLIENT_ID || '').trim()
+    : (process.env.GOOGLE_CLIENT_ID || '').trim(),
+  googleClientSecret: isTestEnv
+    ? ''
+    : (process.env.GOOGLE_CLIENT_SECRET || '').trim()
 };
 
 module.exports = config;
