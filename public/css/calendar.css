@@ -2037,8 +2037,62 @@
   background: #7dd3fc;
 }
 
-.team-sheet-td-day.is-past {
-  opacity: 0.85;
+.team-sheet-table tbody td.team-sheet-td-day.is-past {
+  background: #e2e8f0 !important;
+  border-right: 1px solid #cbd5e1 !important;
+  border-bottom: 2px solid #cbd5e1 !important;
+}
+
+.team-sheet-table tbody td.team-sheet-td-day.is-past .sheet-day-name {
+  color: #64748b !important;
+}
+
+.team-sheet-table tbody td.team-sheet-td-day.is-past .sheet-day-date {
+  color: #94a3b8 !important;
+}
+
+/* Hàng ngày đã qua trong lịch nhóm: màu xám toàn bộ */
+.team-sheet-table tr.is-past-row td.team-sheet-td-shift {
+  background: #f1f5f9;
+  border-right-color: #cbd5e1;
+}
+
+.team-sheet-table tr.is-past-row td.team-sheet-td-shift .sheet-shift-name {
+  color: #64748b;
+}
+
+.team-sheet-table tr.is-past-row td.team-sheet-td-shift .sheet-shift-range {
+  color: #94a3b8;
+}
+
+.team-sheet-table tr.is-past-row td.team-sheet-td-member {
+  background: #f8fafc;
+  cursor: default;
+}
+
+.team-sheet-table tr.is-past-row td.team-sheet-td-member.clickable-me-cell {
+  cursor: not-allowed;
+}
+
+.team-sheet-table tr.is-past-row td.team-sheet-td-member.clickable-me-cell:hover {
+  background: #f8fafc;
+}
+
+.team-sheet-table tr.is-past-row td.team-sheet-td-member .sheet-check-box.checked {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #64748b;
+  box-shadow: none;
+}
+
+.team-sheet-table tr.is-past-row td.team-sheet-td-member .sheet-check-box.busy {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #94a3b8;
+}
+
+.team-sheet-table tr.is-past-row td.team-sheet-td-summary {
+  background: #f8fafc;
 }
 
 /* Cột Ca (Sáng, Chiều, Tối) */
@@ -2284,11 +2338,9 @@
 
 .personal-shift-cell .shift-cell-inner {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
-  gap: 4px;
   text-align: center;
 }
 
@@ -2296,23 +2348,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  font-size: 13px;
+  gap: 6px;
+  font-size: 14px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
   white-space: nowrap;
   word-break: normal;
 }
 
 .personal-shift-cell .status-icon {
-  font-size: 13px;
-}
-
-.personal-shift-cell .shift-cell-sub {
-  font-size: 10.5px;
-  color: #64748b;
-  font-weight: 500;
-  white-space: nowrap;
+  font-size: 15px;
 }
 
 /* Mobile Tweak for Team Sheet Table */

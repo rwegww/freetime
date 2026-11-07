@@ -42,12 +42,6 @@ function buildSteps() {
       text: 'Chạm vào ô lúc bạn BẬN (đi làm, đi học...). Chạm lại để bỏ. Lịch tự lưu.'
     },
     {
-      getTarget: () => document.getElementById('btnOpenBusyRangeModal'),
-      maxSpotHeight: 64,
-      title: 'Nhập nhanh nhiều ngày',
-      text: 'Bận nhiều ngày liền? Bấm đây để nhập giờ bận 1 lần cho cả khoảng ngày.'
-    },
-    {
       getTarget: () =>
         isMobile ? document.getElementById('btnTabSchedule') : document.getElementById('btnScopeTeam'),
       maxSpotHeight: 64,

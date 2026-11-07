@@ -378,7 +378,6 @@ export function renderUnifiedScheduleSection() {
               <span class="status-icon">📌</span>
               <span class="status-text">${escapeHtml(myBusyNote)}</span>${frac}
             </span>
-            <span class="shift-cell-sub">Chạm để bỏ</span>
           `;
         } else if (!isPast) {
           statusHtml = `
@@ -386,7 +385,6 @@ export function renderUnifiedScheduleSection() {
               <span class="status-icon">✨</span>
               <span class="status-text">Rảnh</span>
             </span>
-            <span class="shift-cell-sub">Chạm để bận</span>
           `;
         } else {
           statusHtml = `<span class="shift-cell-label shift-label-past">Đã qua</span>`;
@@ -420,11 +418,11 @@ export function renderUnifiedScheduleSection() {
       const th = document.createElement('th');
       th.className = `team-sheet-th-member ${isMe ? 'is-me-header' : ''}`;
       th.dataset.memberId = m.id;
+      const displayName = isMe ? 'Bạn' : escapeHtml(m.name);
       th.innerHTML = `
         <div class="sheet-member-header-inner">
           <span class="sheet-member-dot" style="background-color: ${escapeHtml(m.color || '#6366f1')}"></span>
-          <span class="sheet-member-name" title="${escapeHtml(m.name)}">${escapeHtml(m.name)}</span>
-          ${isMe ? '<span class="sheet-me-badge">(Bạn)</span>' : ''}
+          <span class="sheet-member-name" title="${isMe ? 'Lịch của bạn' : escapeHtml(m.name)}">${displayName}</span>
         </div>
       `;
       headTr.appendChild(th);
@@ -445,6 +443,9 @@ export function renderUnifiedScheduleSection() {
         tr.className = `team-sheet-row shift-row-${shift.id}`;
         tr.dataset.day = String(d);
         tr.dataset.shift = shift.id;
+        if (isPast) {
+          tr.classList.add('is-past-row');
+        }
 
         const info = getShiftAvailability(d, shift, targetMembers);
         const isAllFree = info.total > 0 && info.freeCount === info.total;
@@ -534,8 +535,10 @@ export function renderUnifiedScheduleSection() {
 
         // Cột Tổng hợp nhóm (Cả nhóm)
         const summaryTd = document.createElement('td');
-        summaryTd.className = `team-sheet-td-summary ${isAllFree ? 'is-all-free' : (info.freeCount > 0 ? 'is-partial' : 'is-none')}`;
-        if (isAllFree) {
+        const isTeamAllFree = !isPast && isAllFree;
+        const isTeamPartial = !isPast && info.freeCount > 0;
+        summaryTd.className = `team-sheet-td-summary ${isTeamAllFree ? 'is-all-free' : (isTeamPartial ? 'is-partial' : 'is-none')}`;
+        if (isTeamAllFree) {
           summaryTd.innerHTML = `
             <div class="sheet-summary-inner">
               <span class="sheet-all-free-badge">✨ Cả nhóm rảnh</span>
@@ -549,7 +552,7 @@ export function renderUnifiedScheduleSection() {
               openSlotInspector(d, shift.startHour, shift.endHour);
             });
           }
-        } else if (info.freeCount > 0) {
+        } else if (isTeamPartial) {
           summaryTd.innerHTML = `
             <div class="sheet-summary-inner">
               <span class="sheet-partial-badge">${info.freeCount}/${info.total} rảnh</span>
@@ -558,7 +561,7 @@ export function renderUnifiedScheduleSection() {
         } else {
           summaryTd.innerHTML = `
             <div class="sheet-summary-inner">
-              <span class="sheet-none-badge">0/${info.total}</span>
+              <span class="sheet-none-badge">—</span>
             </div>
           `;
         }
