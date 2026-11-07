@@ -12,7 +12,9 @@ import {
   showToast,
   escapeHtml,
   extractInviteCode,
-  slugifyUsernameSuggestion
+  slugifyUsernameSuggestion,
+  renderAvatarHtml,
+  applyAvatarElement
 } from './utils.js';
 import {
   state,
@@ -30,6 +32,7 @@ import {
   getRememberedAccount,
   clearRememberedAccount,
   fetchAuthConfig,
+  fetchPublicInvitePreview,
   registerAccount,
   loginAccount,
   loginWithGoogle,
@@ -39,6 +42,7 @@ import {
   createNewGroup,
   previewGroupByCode,
   joinGroupByCode,
+  leaveGroupByCode,
   fetchGroupDetail
 } from './api.js';
 import { computeBestFreeBlocks } from './availability.js';
@@ -70,6 +74,7 @@ import {
 
 let authConfigCache = null;
 let googleScriptPromise = null;
+let pendingSwitchInvite = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   bootstrapApp();
@@ -119,10 +124,15 @@ async function completeAuthSuccess(data, rememberMe = true, welcomeToast = '') {
 
 async function bootstrapApp() {
   const params = new URLSearchParams(window.location.search);
-  const urlRoom = params.get('room') || localStorage.getItem('freetime_pending_oauth_room') || '';
+  const pathJoinMatch = window.location.pathname.match(/^\/join\/([A-Za-z0-9_-]{3,32})\/?$/i);
+  const detectedInviteRaw =
+    (pathJoinMatch && pathJoinMatch[1]) ||
+    params.get('room') ||
+    localStorage.getItem('freetime_pending_oauth_room') ||
+    '';
   localStorage.removeItem('freetime_pending_oauth_room');
-  if (urlRoom && urlRoom.trim()) {
-    state.pendingInviteCode = extractInviteCode(urlRoom);
+  if (detectedInviteRaw && detectedInviteRaw.trim()) {
+    state.pendingInviteCode = extractInviteCode(detectedInviteRaw);
   }
 
   bindAuthEvents();
@@ -222,8 +232,11 @@ function renderSavedAccountCard() {
   }
 
   if (avatarEl) {
-    avatarEl.textContent = saved.avatar || 'TV';
-    avatarEl.style.backgroundColor = saved.color || '#6366f1';
+    applyAvatarElement(avatarEl, {
+      avatar: saved.avatar,
+      name: saved.name || saved.username,
+      color: saved.color || '#6366f1'
+    });
   }
   if (nameEl) nameEl.textContent = saved.name || saved.username;
   if (userEl) {
@@ -241,12 +254,25 @@ function renderSavedAccountCard() {
 function renderAuthInviteBanner() {
   const banner = document.getElementById('authInviteBanner');
   if (!banner) return;
-  if (state.pendingInviteCode) {
-    banner.innerHTML = `🔗 Bạn đang mở link mời của nhóm <strong>#${escapeHtml(state.pendingInviteCode)}</strong>. Hãy đăng nhập hoặc tạo tài khoản mới để vào thẳng cuộc trò chuyện chung!`;
-    banner.classList.remove('hidden');
-  } else {
+  const code = state.pendingInviteCode;
+  if (!code) {
     banner.classList.add('hidden');
+    return;
   }
+
+  banner.innerHTML = `🔗 Bạn đang mở link mời của nhóm <strong>#${escapeHtml(code)}</strong>. Hãy đăng nhập hoặc tạo tài khoản để tham gia ngay!`;
+  banner.classList.remove('hidden');
+
+  fetchPublicInvitePreview(code)
+    .then((info) => {
+      if (state.pendingInviteCode !== code) return;
+      if (info && info.found) {
+        banner.innerHTML = `🔗 Bạn được mời vào nhóm <strong>${escapeHtml(info.name)}</strong> (#${escapeHtml(info.code)} • ${info.memberCount} thành viên). Hãy đăng nhập hoặc tạo tài khoản để tham gia ngay!`;
+      } else if (info && info.valid && !info.found) {
+        banner.innerHTML = `⚠️ Link mời <strong>#${escapeHtml(code)}</strong> không tồn tại hoặc đã đổi mã. Bạn vẫn có thể đăng nhập bình thường.`;
+      }
+    })
+    .catch(() => {});
 }
 
 function renderOnboardingHeader() {
@@ -257,8 +283,11 @@ function renderOnboardingHeader() {
   const userEl = document.getElementById('onboardingUserUsername');
 
   if (avatarEl) {
-    avatarEl.textContent = user.avatar || 'TV';
-    avatarEl.style.backgroundColor = user.color || '#6366f1';
+    applyAvatarElement(avatarEl, {
+      avatar: user.avatar,
+      name: user.name,
+      color: user.color || '#6366f1'
+    });
   }
   if (nameEl) {
     nameEl.textContent = `Xin chào, ${user.name}! 👋`;
@@ -267,6 +296,33 @@ function renderOnboardingHeader() {
     userEl.textContent = `@${user.username}`;
   }
   syncOnboardingCloudTip(user.id);
+}
+
+async function openSingleGroupConflictPrompt(currentRoom, targetCode) {
+  pendingSwitchInvite = {
+    currentCode: currentRoom.code,
+    currentName: currentRoom.name,
+    targetCode
+  };
+
+  const currentLabelEl = document.getElementById('conflictCurrentGroupLabel');
+  const targetLabelEl = document.getElementById('conflictTargetGroupLabel');
+  if (currentLabelEl) {
+    currentLabelEl.textContent = `${currentRoom.name} (#${currentRoom.code})`;
+  }
+  if (targetLabelEl) {
+    targetLabelEl.textContent = `#${targetCode}`;
+  }
+
+  fetchPublicInvitePreview(targetCode)
+    .then((info) => {
+      if (info && info.found && targetLabelEl) {
+        targetLabelEl.textContent = `${info.name} (#${info.code})`;
+      }
+    })
+    .catch(() => {});
+
+  openModal('singleGroupConflictModal');
 }
 
 async function handlePostAuth(user, rooms = []) {
@@ -286,8 +342,18 @@ async function handlePostAuth(user, rooms = []) {
       }
       return;
     } catch (err) {
+      if (
+        err.status === 409 &&
+        err.data &&
+        err.data.code === 'ALREADY_IN_GROUP' &&
+        err.data.currentRoom
+      ) {
+        await openGroupWorkspace(err.data.currentRoom.code, { deferAutoTour: true });
+        await openSingleGroupConflictPrompt(err.data.currentRoom, inviteCode);
+        return;
+      }
       showToast('⚠️ ' + err.message);
-      window.history.replaceState({}, '', window.location.pathname);
+      window.history.replaceState({}, '', '/');
     }
   }
 
@@ -300,7 +366,7 @@ async function handlePostAuth(user, rooms = []) {
     return;
   }
 
-  window.history.replaceState({}, '', window.location.pathname);
+  window.history.replaceState({}, '', '/');
   setAppStage('onboarding');
 }
 
@@ -331,7 +397,7 @@ function enterLoadedGroup(room, member, onlineMemberIds = [], { deferAutoTour = 
     localStorage.setItem(`freetime_last_room_${state.currentUser.id}`, room.code);
   }
 
-  const newUrl = `${window.location.pathname}?room=${encodeURIComponent(room.code)}`;
+  const newUrl = `/?room=${encodeURIComponent(room.code)}`;
   window.history.replaceState({}, '', newUrl);
 
   state.selectedFilterMemberIds = new Set(room.members.map(m => m.id));
@@ -344,7 +410,7 @@ function enterLoadedGroup(room, member, onlineMemberIds = [], { deferAutoTour = 
   }
 }
 
-async function openGroupWorkspace(code) {
+async function openGroupWorkspace(code, { deferAutoTour = false } = {}) {
   const cleanCode = String(code || '').trim().toUpperCase();
   if (!cleanCode) {
     setAppStage('onboarding');
@@ -353,23 +419,27 @@ async function openGroupWorkspace(code) {
 
   try {
     const data = await fetchGroupDetail(cleanCode);
-    enterLoadedGroup(data.room, data.member, data.onlineMemberIds);
+    enterLoadedGroup(data.room, data.member, data.onlineMemberIds, { deferAutoTour });
   } catch (err) {
     if (err.status === 403 && err.data && err.data.canJoin) {
       try {
         const joined = await joinGroupByCode(cleanCode);
-        enterLoadedGroup(joined.room, joined.member, joined.onlineMemberIds);
+        enterLoadedGroup(joined.room, joined.member, joined.onlineMemberIds, { deferAutoTour });
         showToast(`🎉 Đã tham gia nhóm "${joined.room.name}" (#${joined.room.code})!`);
         return;
       } catch (joinErr) {
         showToast('⚠️ ' + joinErr.message);
       }
+    } else if (err.status === 403 && err.data && err.data.currentRoom) {
+      await openGroupWorkspace(err.data.currentRoom.code, { deferAutoTour: true });
+      await openSingleGroupConflictPrompt(err.data.currentRoom, cleanCode);
+      return;
     } else {
       showToast('⚠️ ' + err.message);
     }
 
     if (!state.room) {
-      window.history.replaceState({}, '', window.location.pathname);
+      window.history.replaceState({}, '', '/');
       setAppStage('onboarding');
     }
   }
@@ -386,9 +456,10 @@ function performLogout() {
   state.onlineMemberIds = [];
   state.unreadChatCount = 0;
   state.pendingInviteCode = '';
+  pendingSwitchInvite = null;
   updateUnreadBadge();
 
-  window.history.replaceState({}, '', window.location.pathname);
+  window.history.replaceState({}, '', '/');
   setAppStage('auth');
   showToast('Đã đăng xuất khỏi tài khoản.');
 }
@@ -428,8 +499,11 @@ function renderHeader() {
   const toolbarMemberEl = document.getElementById('toolbarMemberName');
 
   if (me) {
-    avatarEl.textContent = me.avatar || 'TV';
-    avatarEl.style.backgroundColor = me.color || '#6366f1';
+    applyAvatarElement(avatarEl, {
+      avatar: me.avatar,
+      name: me.name,
+      color: me.color || '#6366f1'
+    });
     nameEl.textContent = me.name;
     roleEl.textContent = state.currentUser ? `@${state.currentUser.username}` : 'Tài khoản';
     if (toolbarMemberEl) toolbarMemberEl.textContent = me.name;
@@ -445,8 +519,11 @@ function renderMemberModalList() {
     const nameInput = document.getElementById('profileNameInput');
 
     if (profileAvatar) {
-      profileAvatar.textContent = user.avatar || 'TV';
-      profileAvatar.style.backgroundColor = user.color || '#6366f1';
+      applyAvatarElement(profileAvatar, {
+        avatar: user.avatar,
+        name: user.name,
+        color: user.color || '#6366f1'
+      });
     }
     if (profileName) profileName.textContent = user.name;
     if (profileUsername) profileUsername.textContent = `@${user.username}`;
@@ -467,7 +544,7 @@ function renderMemberModalList() {
     item.className = `member-select-btn ${isMe ? 'active' : ''}`;
     item.style.cursor = 'default';
     item.innerHTML = `
-      <span class="avatar-circle" style="background:${m.color}">${escapeHtml(m.avatar)}</span>
+      ${renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'avatar-circle' })}
       <div style="overflow:hidden;flex:1;min-width:0;">
         <strong style="display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
           ${escapeHtml(m.name)}${isMe ? ' (Bạn)' : ''}
@@ -543,7 +620,7 @@ async function copyTextSafe(text) {
 }
 
 function getCurrentInviteUrl() {
-  return `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(state.roomCode)}`;
+  return `${window.location.origin}/join/${encodeURIComponent(state.roomCode)}`;
 }
 
 function buildFriendlyInviteMessage() {
@@ -553,6 +630,46 @@ function buildFriendlyInviteMessage() {
   return `👋 Mình mời bạn vào nhóm "${roomName}" trên FreeTime để xem lịch rảnh & nhắn tin chung nhé!\n👉 Bấm vào link này để vào thẳng nhóm: ${url}\n🔑 Hoặc nhập mã nhóm: ${code}`;
 }
 
+async function triggerShareOrCopyInvite(btnEl, defaultLabel) {
+  const inviteMsg = buildFriendlyInviteMessage();
+  const shareUrl = getCurrentInviteUrl();
+  const canUseNativeShare =
+    typeof navigator.share === 'function' &&
+    window.matchMedia &&
+    window.matchMedia('(pointer: coarse)').matches;
+
+  if (canUseNativeShare) {
+    try {
+      await navigator.share({
+        title: state.room ? `Mời vào nhóm ${state.room.name}` : 'Mời vào nhóm FreeTime',
+        text: inviteMsg,
+        url: shareUrl
+      });
+      showToast('📲 Đã mở bảng chia sẻ link nhóm!');
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+  }
+
+  try {
+    await copyTextSafe(inviteMsg);
+    if (btnEl) {
+      btnEl.classList.add('copied-ok');
+      btnEl.textContent = '✓ Đã chép lời mời & link! Mở Zalo / Messenger để Dán gửi';
+      if (defaultLabel) {
+        setTimeout(() => {
+          btnEl.classList.remove('copied-ok');
+          btnEl.textContent = defaultLabel;
+        }, 3200);
+      }
+    }
+    showToast('✅ Đã chép sẵn link mời! Hãy mở Zalo / Messenger và Dán gửi bạn bè nhé.');
+  } catch (_) {
+    showToast('⚠️ Không thể sao chép tự động.');
+  }
+}
+
 function openInviteCelebrationModal({ isNewlyCreated = false } = {}) {
   if (!state.roomCode) return;
   const tagEl = document.getElementById('inviteModalTag');
@@ -560,18 +677,21 @@ function openInviteCelebrationModal({ isNewlyCreated = false } = {}) {
   const subtextEl = document.getElementById('inviteModalSubtext');
   const nameEl = document.getElementById('createdGroupNameDisplay');
   const codeEl = document.getElementById('createdGroupCodeBig');
+  const shareInputEl = document.getElementById('createdShareLinkInput');
+  const copyLinkBtn = document.getElementById('btnCopyCreatedLink');
   const shareBtn = document.getElementById('btnShareInviteMessage');
 
   if (tagEl) {
-    tagEl.textContent = isNewlyCreated ? 'MÃ NHÓM CỦA BẠN' : 'MỜI BẠN BÈ';
+    tagEl.textContent = isNewlyCreated ? 'TẠO NHÓM THÀNH CÔNG' : 'CHIA SẺ LINK NHÓM';
   }
   if (headingEl) {
     headingEl.textContent = isNewlyCreated
       ? '🎉 Tạo nhóm thành công!'
-      : '👋 Mời bạn vào nhóm';
+      : '🔗 Chia sẻ link mời nhóm';
   }
   if (subtextEl) {
-    subtextEl.textContent = 'Gửi mã hoặc link bên dưới cho bạn bè để cùng vào nhóm:';
+    subtextEl.textContent =
+      'Gửi link bên dưới cho bạn bè — ai bấm vào link sẽ vào thẳng nhóm của bạn:';
   }
   if (nameEl) {
     nameEl.textContent = state.room ? state.room.name : `Nhóm #${state.roomCode}`;
@@ -579,9 +699,16 @@ function openInviteCelebrationModal({ isNewlyCreated = false } = {}) {
   if (codeEl) {
     codeEl.textContent = state.roomCode;
   }
+  if (shareInputEl) {
+    shareInputEl.value = getCurrentInviteUrl();
+  }
+  if (copyLinkBtn) {
+    copyLinkBtn.classList.remove('copied-ok');
+    copyLinkBtn.textContent = 'Sao chép link';
+  }
   if (shareBtn) {
     shareBtn.classList.remove('copied-ok');
-    shareBtn.textContent = '💬 Gửi lời mời qua Zalo / Messenger';
+    shareBtn.textContent = '📲 Chia sẻ qua Zalo / Messenger';
   }
 
   openModal('groupCreatedModal');
@@ -598,7 +725,7 @@ async function pasteCodeIntoInput(inputEl, onAfterPaste) {
         if (onAfterPaste) onAfterPaste(inputEl.value);
         showToast(
           extracted
-            ? `📋 Đã dán mã nhóm: #${extracted}`
+            ? `📋 Đã nhận mã nhóm từ link: #${extracted}`
             : '📋 Đã dán nội dung từ bộ nhớ tạm.'
         );
         return;
@@ -608,53 +735,53 @@ async function pasteCodeIntoInput(inputEl, onAfterPaste) {
     }
   }
   inputEl.focus();
-  showToast('👆 Hãy nhấn giữ vào ô nhập mã rồi chọn "Dán" (hoặc bấm Ctrl + V) nhé!');
+  showToast('👆 Hãy nhấn giữ vào ô nhập rồi chọn "Dán" (hoặc bấm Ctrl + V) nhé!');
 }
 
-async function openRoomSwitcherModal() {
+function openRoomSwitcherModal() {
+  if (!state.room || !state.roomCode) return;
+
+  const groupNameEl = document.getElementById('modalCurrentGroupName');
+  const groupMetaEl = document.getElementById('modalCurrentGroupMeta');
   const codeDisplay = document.getElementById('currentInviteCodeDisplay');
-  if (codeDisplay && state.roomCode) {
-    codeDisplay.textContent = `#${state.roomCode}`;
+  const shareInputEl = document.getElementById('modalShareLinkInput');
+  const copyLinkBtn = document.getElementById('btnCopyModalLink');
+  const membersListEl = document.getElementById('roomModalMembersList');
+  const leaveConfirmNameEl = document.getElementById('leaveConfirmGroupName');
+  const btnShowLeave = document.getElementById('btnShowLeaveConfirm');
+  const leaveConfirmBox = document.getElementById('leaveGroupConfirmBox');
+
+  if (groupNameEl) groupNameEl.textContent = state.room.name;
+  if (groupMetaEl) {
+    groupMetaEl.textContent = `${state.room.members.length} thành viên • Đang tham gia`;
+  }
+  if (codeDisplay) codeDisplay.textContent = `#${state.roomCode}`;
+  if (shareInputEl) shareInputEl.value = getCurrentInviteUrl();
+  if (copyLinkBtn) {
+    copyLinkBtn.classList.remove('copied-ok');
+    copyLinkBtn.textContent = 'Sao chép';
+  }
+  if (leaveConfirmNameEl) {
+    leaveConfirmNameEl.textContent = `"${state.room.name}" (#${state.roomCode})`;
+  }
+  if (btnShowLeave) btnShowLeave.classList.remove('hidden');
+  if (leaveConfirmBox) leaveConfirmBox.classList.add('hidden');
+
+  if (membersListEl) {
+    membersListEl.innerHTML = '';
+    state.room.members.forEach((m) => {
+      const isMe = m.id === state.activeMemberId;
+      const chip = document.createElement('span');
+      chip.className = `room-member-mini-chip ${isMe ? 'is-me' : ''}`;
+      chip.innerHTML = `
+        ${renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'mini-av' })}
+        <span>${escapeHtml(m.name)}${isMe ? ' (Bạn)' : ''}</span>
+      `;
+      membersListEl.appendChild(chip);
+    });
   }
 
   openModal('roomModal');
-
-  try {
-    const rooms = await fetchMyGroups();
-    state.myRooms = rooms;
-    const listEl = document.getElementById('existingRoomsList');
-    if (!listEl) return;
-    listEl.innerHTML = '';
-
-    if (rooms.length === 0) {
-      listEl.innerHTML = `<div style="font-size:12px;color:#64748b;padding:8px 4px;">Bạn chưa tham gia nhóm nào.</div>`;
-      return;
-    }
-
-    rooms.forEach(r => {
-      const isCurrent = r.code === state.roomCode;
-      const item = document.createElement('div');
-      item.className = `room-item-btn ${isCurrent ? 'active-room' : ''}`;
-      item.innerHTML = `
-        <div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-          <strong style="color:#4f46e5">[#${escapeHtml(r.code)}]</strong>
-          <span style="font-weight:600;margin-left:6px;">${escapeHtml(r.name)}</span>
-        </div>
-        <span style="font-size:11px;color:#64748b;flex-shrink:0;margin-left:8px;">
-          ${r.memberCount} thành viên${r.onlineCount ? ` • ${r.onlineCount} online` : ''}
-        </span>
-      `;
-      item.addEventListener('click', () => {
-        closeModal('roomModal');
-        if (r.code !== state.roomCode) {
-          openGroupWorkspace(r.code);
-        }
-      });
-      listEl.appendChild(item);
-    });
-  } catch (err) {
-    showToast('⚠️ ' + err.message);
-  }
 }
 
 // ==================== AUTH EVENTS ====================
@@ -1134,16 +1261,6 @@ function bindOnboardingEvents() {
       if (submitBtn) submitBtn.disabled = false;
     }
   });
-
-  document.getElementById('btnTryDemoGroup').addEventListener('click', async () => {
-    try {
-      const data = await joinGroupByCode('TEAM01');
-      enterLoadedGroup(data.room, data.member, data.onlineMemberIds);
-      showToast('🎉 Đã vào nhóm trải nghiệm #TEAM01!');
-    } catch (err) {
-      showToast('⚠️ ' + err.message);
-    }
-  });
 }
 
 // ==================== WORKSPACE EVENTS ====================
@@ -1293,57 +1410,47 @@ function bindWorkspaceEvents() {
     openInviteCelebrationModal({ isNewlyCreated: false });
   });
 
+  ['createdShareLinkInput', 'modalShareLinkInput'].forEach(inputId => {
+    const el = document.getElementById(inputId);
+    if (el) {
+      el.addEventListener('click', () => el.select());
+    }
+  });
+
   document.getElementById('btnCopyModalCode').addEventListener('click', () => {
     copyTextSafe(state.roomCode)
       .then(() => showToast(`📋 Đã sao chép mã nhóm: ${state.roomCode}`))
       .catch(() => showToast('⚠️ Không thể sao chép tự động.'));
   });
 
-  document.getElementById('btnCopyModalLink').addEventListener('click', () => {
-    copyTextSafe(getCurrentInviteUrl())
-      .then(() => showToast(`🔗 Đã sao chép link mời nhóm #${state.roomCode}!`))
-      .catch(() => showToast('⚠️ Không thể sao chép tự động.'));
-  });
+  const btnCopyModalLink = document.getElementById('btnCopyModalLink');
+  if (btnCopyModalLink) {
+    btnCopyModalLink.addEventListener('click', () => {
+      copyTextSafe(getCurrentInviteUrl())
+        .then(() => {
+          btnCopyModalLink.classList.add('copied-ok');
+          btnCopyModalLink.textContent = '✓ Đã chép';
+          setTimeout(() => {
+            btnCopyModalLink.classList.remove('copied-ok');
+            btnCopyModalLink.textContent = 'Sao chép';
+          }, 2400);
+          showToast(`🔗 Đã sao chép link mời nhóm #${state.roomCode}!`);
+        })
+        .catch(() => showToast('⚠️ Không thể sao chép tự động.'));
+    });
+  }
 
   const btnCopyModalFullInvite = document.getElementById('btnCopyModalFullInvite');
   if (btnCopyModalFullInvite) {
     btnCopyModalFullInvite.addEventListener('click', () => {
-      copyTextSafe(buildFriendlyInviteMessage())
-        .then(() => showToast('✅ Đã chép lời mời! Hãy mở Zalo / Messenger và Dán gửi bạn bè nhé.'))
-        .catch(() => showToast('⚠️ Không thể sao chép tự động.'));
+      triggerShareOrCopyInvite(btnCopyModalFullInvite, '📲 Gửi lời mời Zalo / Messenger');
     });
   }
 
   const btnShareInviteMessage = document.getElementById('btnShareInviteMessage');
   if (btnShareInviteMessage) {
-    btnShareInviteMessage.addEventListener('click', async () => {
-      const inviteMsg = buildFriendlyInviteMessage();
-      const canUseNativeShare =
-        typeof navigator.share === 'function' &&
-        window.matchMedia &&
-        window.matchMedia('(pointer: coarse)').matches;
-
-      if (canUseNativeShare) {
-        try {
-          await navigator.share({
-            title: state.room ? `Mời vào nhóm ${state.room.name}` : 'Mời vào nhóm FreeTime',
-            text: inviteMsg
-          });
-          showToast('📲 Đã mở bảng chia sẻ lời mời!');
-          return;
-        } catch (err) {
-          if (err && err.name === 'AbortError') return;
-        }
-      }
-
-      try {
-        await copyTextSafe(inviteMsg);
-        btnShareInviteMessage.classList.add('copied-ok');
-        btnShareInviteMessage.textContent = '✓ Đã chép lời mời! Mở Zalo / Messenger và Dán gửi nhé';
-        showToast('✅ Đã chép sẵn lời mời! Hãy mở Zalo / Messenger và Dán (Paste) gửi bạn bè nhé.');
-      } catch (_) {
-        showToast('⚠️ Không thể sao chép tự động.');
-      }
+    btnShareInviteMessage.addEventListener('click', () => {
+      triggerShareOrCopyInvite(btnShareInviteMessage, '📲 Chia sẻ qua Zalo / Messenger');
     });
   }
 
@@ -1360,25 +1467,92 @@ function bindWorkspaceEvents() {
   if (btnCopyCreatedLink) {
     btnCopyCreatedLink.addEventListener('click', () => {
       copyTextSafe(getCurrentInviteUrl())
-        .then(() => showToast(`🔗 Đã sao chép link mời nhóm #${state.roomCode}!`))
+        .then(() => {
+          btnCopyCreatedLink.classList.add('copied-ok');
+          btnCopyCreatedLink.textContent = '✓ Đã chép!';
+          setTimeout(() => {
+            btnCopyCreatedLink.classList.remove('copied-ok');
+            btnCopyCreatedLink.textContent = 'Sao chép link';
+          }, 2400);
+          showToast(`🔗 Đã sao chép link mời nhóm #${state.roomCode}!`);
+        })
         .catch(() => showToast('⚠️ Không thể sao chép tự động.'));
     });
   }
 
-  const modalJoinInput = document.getElementById('joinRoomCodeInput');
-  const btnPasteModalJoinCode = document.getElementById('btnPasteModalJoinCode');
-  if (btnPasteModalJoinCode && modalJoinInput) {
-    btnPasteModalJoinCode.addEventListener('click', () => {
-      pasteCodeIntoInput(modalJoinInput);
+  // Leave current group (enables user to leave their 1 group and create/join another)
+  const btnShowLeaveConfirm = document.getElementById('btnShowLeaveConfirm');
+  const leaveGroupConfirmBox = document.getElementById('leaveGroupConfirmBox');
+  const btnCancelLeaveGroup = document.getElementById('btnCancelLeaveGroup');
+  const btnConfirmLeaveGroup = document.getElementById('btnConfirmLeaveGroup');
+
+  if (btnShowLeaveConfirm && leaveGroupConfirmBox) {
+    btnShowLeaveConfirm.addEventListener('click', () => {
+      btnShowLeaveConfirm.classList.add('hidden');
+      leaveGroupConfirmBox.classList.remove('hidden');
     });
   }
-  if (modalJoinInput) {
-    modalJoinInput.addEventListener('paste', (e) => {
-      const pasted = e.clipboardData ? e.clipboardData.getData('text') : '';
-      const extracted = extractInviteCode(pasted);
-      if (extracted && extracted !== pasted.trim()) {
-        e.preventDefault();
-        modalJoinInput.value = extracted;
+  if (btnCancelLeaveGroup && btnShowLeaveConfirm && leaveGroupConfirmBox) {
+    btnCancelLeaveGroup.addEventListener('click', () => {
+      leaveGroupConfirmBox.classList.add('hidden');
+      btnShowLeaveConfirm.classList.remove('hidden');
+    });
+  }
+  if (btnConfirmLeaveGroup) {
+    btnConfirmLeaveGroup.addEventListener('click', async () => {
+      if (!state.roomCode) return;
+      btnConfirmLeaveGroup.disabled = true;
+      const prevLabel = btnConfirmLeaveGroup.textContent;
+      btnConfirmLeaveGroup.textContent = 'Đang rời nhóm...';
+      try {
+        const res = await leaveGroupByCode(state.roomCode);
+        if (state.currentUser) {
+          localStorage.removeItem(`freetime_last_room_${state.currentUser.id}`);
+        }
+        state.myRooms = res.rooms || [];
+        state.room = null;
+        state.roomCode = '';
+        state.activeMemberId = null;
+        state.onlineMemberIds = [];
+        closeModal('roomModal');
+
+        if (state.myRooms.length > 0) {
+          await openGroupWorkspace(state.myRooms[0].code);
+        } else {
+          window.history.replaceState({}, '', '/');
+          setAppStage('onboarding');
+        }
+        showToast(`👋 Đã rời nhóm "${res.leftName || res.leftCode}". Bạn có thể tạo hoặc vào nhóm mới!`);
+      } catch (err) {
+        showToast('⚠️ ' + err.message);
+      } finally {
+        btnConfirmLeaveGroup.disabled = false;
+        btnConfirmLeaveGroup.textContent = prevLabel;
+      }
+    });
+  }
+
+  // Switch group confirmation when clicking a share link while already in another group
+  const btnConfirmSwitchGroup = document.getElementById('btnConfirmSwitchGroup');
+  if (btnConfirmSwitchGroup) {
+    btnConfirmSwitchGroup.addEventListener('click', async () => {
+      if (!pendingSwitchInvite) return;
+      const { currentCode, targetCode } = pendingSwitchInvite;
+      btnConfirmSwitchGroup.disabled = true;
+      const prevLabel = btnConfirmSwitchGroup.textContent;
+      btnConfirmSwitchGroup.textContent = 'Đang chuyển nhóm...';
+      try {
+        await leaveGroupByCode(currentCode);
+        const joined = await joinGroupByCode(targetCode);
+        pendingSwitchInvite = null;
+        closeModal('singleGroupConflictModal');
+        enterLoadedGroup(joined.room, joined.member, joined.onlineMemberIds);
+        showToast(`🎉 Đã chuyển sang nhóm "${joined.room.name}" (#${joined.room.code})!`);
+      } catch (err) {
+        showToast('⚠️ ' + err.message);
+      } finally {
+        btnConfirmSwitchGroup.disabled = false;
+        btnConfirmSwitchGroup.textContent = prevLabel;
       }
     });
   }
@@ -1412,42 +1586,6 @@ function bindWorkspaceEvents() {
       }
       closeModal('memberModal');
       showToast('✅ Đã cập nhật tên hiển thị!');
-    } catch (err) {
-      showToast('⚠️ ' + err.message);
-    }
-  });
-
-  document.getElementById('joinRoomByCodeForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const rawCode = document.getElementById('joinRoomCodeInput').value.trim();
-    const code = extractInviteCode(rawCode) || rawCode;
-    if (!code) return;
-
-    try {
-      const data = await joinGroupByCode(code);
-      document.getElementById('joinRoomCodeInput').value = '';
-      closeModal('roomModal');
-      enterLoadedGroup(data.room, data.member, data.onlineMemberIds);
-      showToast(`🎉 Đã vào nhóm "${data.room.name}" (#${data.room.code})!`);
-    } catch (err) {
-      showToast('⚠️ ' + err.message);
-    }
-  });
-
-  document.getElementById('createRoomForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const code = document.getElementById('newRoomCode').value.trim();
-    const name = document.getElementById('newRoomName').value.trim();
-    if (!name) return;
-
-    try {
-      const data = await createNewGroup({ name, code });
-      document.getElementById('newRoomCode').value = '';
-      document.getElementById('newRoomName').value = '';
-      closeModal('roomModal');
-      enterLoadedGroup(data.room, data.member, data.onlineMemberIds, { deferAutoTour: true });
-      openInviteCelebrationModal({ isNewlyCreated: true });
-      showToast(`✨ Đã tạo nhóm mới "${data.room.name}" (#${data.room.code})!`);
     } catch (err) {
       showToast('⚠️ ' + err.message);
     }

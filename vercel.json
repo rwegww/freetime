@@ -8,6 +8,14 @@
     {
       "source": "/socket.io/(.*)",
       "destination": "/api"
+    },
+    {
+      "source": "/join/:code",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/join/:code/",
+      "destination": "/index.html"
     }
   ]
 }

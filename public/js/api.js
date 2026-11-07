@@ -118,6 +118,11 @@ export async function fetchAuthConfig() {
   return parseJsonResponse(res, 'Không thể tải cấu hình đăng nhập.');
 }
 
+export async function fetchPublicInvitePreview(rawCode) {
+  const res = await fetch(`/api/auth/invite?code=${encodeURIComponent(String(rawCode || ''))}`);
+  return parseJsonResponse(res, 'Không thể kiểm tra link mời.');
+}
+
 export async function registerAccount({ name, username, password, rememberMe = true }) {
   const res = await fetch('/api/auth/register', {
     method: 'POST',
@@ -199,6 +204,15 @@ export async function joinGroupByCode(code) {
     body: JSON.stringify({ code })
   });
   return parseJsonResponse(res, 'Không thể tham gia nhóm.');
+}
+
+export async function leaveGroupByCode(code) {
+  const cleanCode = String(code || '').trim().toUpperCase();
+  const res = await fetch(`/api/groups/${encodeURIComponent(cleanCode)}/leave`, {
+    method: 'POST',
+    headers: authHeaders({ 'Content-Type': 'application/json' })
+  });
+  return parseJsonResponse(res, 'Không thể rời khỏi nhóm.');
 }
 
 export async function fetchGroupDetail(code) {

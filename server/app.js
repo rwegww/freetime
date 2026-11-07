@@ -17,6 +17,12 @@ function createApp() {
   });
 
   app.use(express.static(path.join(__dirname, '../public')));
+
+  // Hỗ trợ link chia sẻ nhóm trực tiếp dạng /join/:code
+  app.get('/join/:code', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+  });
+
   app.use('/api', apiRoutes);
   app.use(errorHandler);
 

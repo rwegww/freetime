@@ -39,6 +39,12 @@ function isGoogleOnlyUser(user) {
   return Boolean(user && typeof user.passwordHash === 'string' && user.passwordHash.startsWith('oauth$google$'));
 }
 
+function sanitizeAvatarUrl(raw) {
+  const str = String(raw || '').trim();
+  if (!str || str.length > 1024) return '';
+  return /^https?:\/\//i.test(str) ? str : '';
+}
+
 function verifyPassword(password, storedHash) {
   try {
     const parts = String(storedHash || '').split('$');
@@ -158,7 +164,8 @@ async function verifyGoogleAuthPayload(
     return {
       sub: String(info.sub || info.email),
       email: String(info.email).trim().toLowerCase(),
-      name: String(info.name || info.given_name || info.email.split('@')[0]).trim()
+      name: String(info.name || info.given_name || info.email.split('@')[0]).trim(),
+      picture: sanitizeAvatarUrl(info.picture)
     };
   }
 
@@ -196,7 +203,8 @@ async function verifyGoogleAuthPayload(
     return {
       sub: String(userInfo.sub || userInfo.email),
       email: String(userInfo.email).trim().toLowerCase(),
-      name: String(userInfo.name || userInfo.given_name || userInfo.email.split('@')[0]).trim()
+      name: String(userInfo.name || userInfo.given_name || userInfo.email.split('@')[0]).trim(),
+      picture: sanitizeAvatarUrl(userInfo.picture || tokenInfo.picture)
     };
   }
 
@@ -233,7 +241,8 @@ async function verifyGoogleAuthPayload(
     return {
       sub: String(meta.sub || supaUser.id || supaUser.email),
       email: String(supaUser.email).trim().toLowerCase(),
-      name: String(meta.full_name || meta.name || supaUser.email.split('@')[0]).trim()
+      name: String(meta.full_name || meta.name || supaUser.email.split('@')[0]).trim(),
+      picture: sanitizeAvatarUrl(meta.avatar_url || meta.picture)
     };
   }
 

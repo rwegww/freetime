@@ -9,7 +9,8 @@ import {
   formatHourRange,
   openModal,
   showToast,
-  escapeHtml
+  escapeHtml,
+  renderAvatarHtml
 } from './utils.js';
 import {
   state,
@@ -41,7 +42,7 @@ export function renderMemberFilterChips() {
     const chip = document.createElement('div');
     chip.className = `member-filter-chip ${isSelected ? 'selected' : ''}`;
     chip.innerHTML = `
-      <span class="chip-avatar" style="background:${member.color}">${escapeHtml(member.avatar)}</span>
+      ${renderAvatarHtml({ avatar: member.avatar, name: member.name, color: member.color, className: 'chip-avatar' })}
       <span>${escapeHtml(member.name)}</span>
     `;
     chip.addEventListener('click', () => {
@@ -224,7 +225,7 @@ export function renderUnifiedScheduleSection() {
       const freeAvatarsHtml = !isPast && !isMyBusy && !isAllFree
         ? info.freeMembers
           .slice(0, 3)
-          .map(m => `<span class="mini-dot" style="background:${m.color}">${escapeHtml(m.avatar)}</span>`)
+          .map(m => renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'mini-dot' }))
           .join('')
         : '';
 
@@ -474,10 +475,9 @@ export function openSlotInspector(dayIndex, hour, suggestedEndHour = null) {
   document.getElementById('slotFreeMembersList').innerHTML = info.freeMembers.length
     ? info.freeMembers.map(m => `
         <li class="slot-member-item">
-          <span class="chip-avatar" style="background:${m.color}">${escapeHtml(m.avatar)}</span>
+          ${renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'chip-avatar' })}
           <div>
             <strong>${escapeHtml(m.name)}</strong>
-            <small style="display:block;color:#64748b">${escapeHtml(m.role)}</small>
           </div>
         </li>
       `).join('')
@@ -486,7 +486,7 @@ export function openSlotInspector(dayIndex, hour, suggestedEndHour = null) {
   document.getElementById('slotBusyMembersList').innerHTML = info.busyMembers.length
     ? info.busyMembers.map(({ member, note }) => `
         <li class="slot-member-item">
-          <span class="chip-avatar" style="background:${member.color}">${escapeHtml(member.avatar)}</span>
+          ${renderAvatarHtml({ avatar: member.avatar, name: member.name, color: member.color, className: 'chip-avatar' })}
           <div>
             <strong>${escapeHtml(member.name)}</strong>
             <small style="display:block;color:#dc2626;font-weight:600;">📌 ${escapeHtml(note)}</small>

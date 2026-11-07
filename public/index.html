@@ -176,10 +176,13 @@
       </div>
 
       <div class="onboarding-main-card">
-        <h2 class="onboarding-minimal-title">Bạn muốn bắt đầu thế nào?</h2>
+        <div class="onboarding-title-stack">
+          <h2 class="onboarding-minimal-title">Bạn muốn bắt đầu thế nào?</h2>
+          <span class="single-group-rule-pill">🔒 Mỗi người chỉ tham gia 1 nhóm duy nhất</span>
+        </div>
 
         <!-- 2 ô lựa chọn tối giản, thoáng mắt -->
-        <div class="onboarding-choice-grid" role="tablist" aria-label="Chọn Tạo nhóm mới hoặc Nhập mã nhóm">
+        <div class="onboarding-choice-grid" role="tablist" aria-label="Chọn Tạo nhóm mới hoặc Dán link mời">
           <button type="button" class="choice-card active" id="btnChooseCreateGroup" data-onboard-mode="create" role="tab" aria-selected="true">
             <div class="choice-card-top">
               <span class="choice-icon create-icon" aria-hidden="true">
@@ -187,23 +190,23 @@
               </span>
               <span class="choice-radio-dot" aria-hidden="true"></span>
             </div>
-            <strong>Tạo nhóm mới</strong>
-            <p>Tự lập nhóm & mời bạn bè</p>
+            <strong>Tạo nhóm & Link mời</strong>
+            <p>Tạo nhóm mới & lấy link gửi bạn bè</p>
           </button>
 
           <button type="button" class="choice-card" id="btnChooseJoinGroup" data-onboard-mode="join" role="tab" aria-selected="false">
             <div class="choice-card-top">
               <span class="choice-icon join-icon" aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
               </span>
               <span class="choice-radio-dot" aria-hidden="true"></span>
             </div>
-            <strong>Nhập mã nhóm</strong>
-            <p>Vào nhóm khi đã có mã mời</p>
+            <strong>Dán link / Mã nhóm</strong>
+            <p>Vào nhóm từ link hoặc mã bạn bè gửi</p>
           </button>
         </div>
 
-        <!-- Khung Cách 1: Tạo nhóm mới (tối giản 1 ô nhập) -->
+        <!-- Khung Cách 1: Tạo nhóm mới & lấy link chia sẻ -->
         <div class="onboarding-action-panel" id="onboardingCreatePanel" role="tabpanel">
           <form id="onboardingCreateGroupForm" class="add-member-form">
             <div class="form-row">
@@ -230,18 +233,18 @@
             </details>
 
             <button type="submit" class="btn-primary btn-onboarding-cta full-width" id="btnOnboardCreateSubmit">
-              Tạo nhóm mới →
+              🔗 Tạo nhóm & Lấy link chia sẻ →
             </button>
           </form>
         </div>
 
-        <!-- Khung Cách 2: Nhập mã nhóm (tối giản 1 ô nhập + Dán) -->
+        <!-- Khung Cách 2: Dán link chia sẻ hoặc nhập mã nhóm -->
         <div class="onboarding-action-panel hidden" id="onboardingJoinPanel" role="tabpanel">
           <form id="onboardingJoinGroupForm" class="add-member-form">
             <div class="join-code-input-group">
-              <input type="text" id="onboardJoinCode" class="modal-input input-lg join-code-field" placeholder="Nhập mã (VD: FT8K2M) hoặc dán link..." aria-label="Mã nhóm hoặc link mời" autocomplete="off" required />
-              <button type="button" class="btn-paste-code" id="btnPasteJoinCode" title="Dán mã hoặc link đã sao chép">
-                📋 Dán
+              <input type="text" id="onboardJoinCode" class="modal-input input-lg join-code-field" placeholder="Dán link mời hoặc nhập mã (VD: FT8K2M)..." aria-label="Link mời hoặc mã nhóm" autocomplete="off" required />
+              <button type="button" class="btn-paste-code" id="btnPasteJoinCode" title="Dán link hoặc mã đã sao chép">
+                📋 Dán link
               </button>
             </div>
 
@@ -251,10 +254,6 @@
               Vào nhóm ngay →
             </button>
           </form>
-        </div>
-
-        <div class="demo-minimal-row">
-          <button type="button" class="btn-link-sm" id="btnTryDemoGroup">Xem thử nhóm mẫu #TEAM01 →</button>
         </div>
       </div>
     </div>
@@ -274,14 +273,14 @@
       </div>
 
       <div class="room-badge-group">
-        <button id="btnOpenRoomModal" class="room-pill" title="Chuyển nhóm, tạo nhóm mới hoặc tham gia nhóm khác">
+        <button id="btnOpenRoomModal" class="room-pill" title="Xem thông tin nhóm hiện tại, link mời hoặc rời nhóm">
           <span class="room-code-tag" id="headerRoomCode">TEAM01</span>
           <span class="room-name-text" id="headerRoomName">Nhóm Dự Án & Vận Hành</span>
           <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
         </button>
-        <button id="btnCopyRoomLink" class="btn-ghost btn-invite" title="Mời bạn bè vào nhóm này qua Zalo, Messenger hoặc mã nhóm" aria-label="Mời bạn vào nhóm">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-          <span class="btn-label">Mời bạn</span>
+        <button id="btnCopyRoomLink" class="btn-ghost btn-invite" title="Lấy link chia sẻ nhóm để gửi qua Zalo, Messenger" aria-label="Chia sẻ link nhóm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span class="btn-label">Chia sẻ link</span>
         </button>
       </div>
     </div>
@@ -597,81 +596,80 @@
     </div>
   </div>
 
-  <!-- MODAL 3: Quản lý Nhóm của tôi, Tham gia nhóm & Tạo nhóm mới -->
+  <!-- MODAL 3: Thông tin Nhóm duy nhất, Chia sẻ Link & Rời nhóm -->
   <div id="roomModal" class="modal-backdrop hidden">
     <div class="modal-card">
       <div class="modal-sheet-handle" aria-hidden="true"></div>
       <div class="modal-header">
         <div>
-          <span class="modal-tag">Quản lý nhóm làm việc</span>
-          <h3>Nhóm của bạn & Mời thành viên</h3>
+          <span class="modal-tag">1 tài khoản • 1 nhóm duy nhất</span>
+          <h3>Nhóm của bạn & Chia sẻ link</h3>
         </div>
         <button class="modal-close-btn" data-close="roomModal" aria-label="Đóng">&times;</button>
       </div>
       <div class="modal-body">
-        <!-- Hộp chia sẻ mã nhóm hiện tại -->
-        <div class="invite-share-card">
-          <div>
-            <div style="font-size:11px;font-weight:700;color:var(--text-secondary);">MÃ MỜI NHÓM HIỆN TẠI</div>
-            <div class="invite-code-big" id="currentInviteCodeDisplay">#TEAM01</div>
+        <!-- Thẻ nhóm hiện tại -->
+        <div class="current-single-group-box">
+          <div class="current-single-group-info">
+            <strong id="modalCurrentGroupName">Nhóm Của Bạn</strong>
+            <span id="modalCurrentGroupMeta">1 thành viên</span>
           </div>
-          <div class="invite-share-actions">
-            <button type="button" class="btn-secondary" id="btnCopyModalCode">Chép mã</button>
-            <button type="button" class="btn-secondary" id="btnCopyModalLink">Chép link</button>
-            <button type="button" class="btn-primary" id="btnCopyModalFullInvite">📲 Chép lời mời Zalo</button>
+          <span class="invite-code-big" id="currentInviteCodeDisplay">#TEAM01</span>
+        </div>
+
+        <!-- Hộp Link Chia Sẻ Nhóm -->
+        <div class="share-link-field-wrap">
+          <label class="share-link-label" for="modalShareLinkInput">🔗 Link mời vào thẳng nhóm</label>
+          <div class="share-url-bar">
+            <input type="text" id="modalShareLinkInput" class="share-url-input" readonly aria-label="Link chia sẻ nhóm" />
+            <button type="button" class="btn-copy-url-inline" id="btnCopyModalLink">Sao chép</button>
+          </div>
+          <div class="invite-share-actions" style="margin-top: 8px;">
+            <button type="button" class="btn-primary" id="btnCopyModalFullInvite" style="flex: 1.5;">📲 Gửi lời mời Zalo / Messenger</button>
+            <button type="button" class="btn-secondary" id="btnCopyModalCode" style="flex: 1;">📋 Chép mã</button>
           </div>
         </div>
 
+        <!-- Danh sách thành viên nhóm -->
         <div class="form-row">
-          <label>Các nhóm bạn đã tham gia</label>
-          <div id="existingRoomsList" class="rooms-list-box"></div>
+          <label>Thành viên trong nhóm</label>
+          <div id="roomModalMembersList" class="group-members-readonly"></div>
         </div>
 
-        <div class="divider-text"><span>THAM GIA NHÓM KHÁC BẰNG MÃ MỜI</span></div>
-
-        <form id="joinRoomByCodeForm" class="form-row-inline stack-on-xs">
-          <div style="flex: 1.6;">
-            <div class="join-code-input-group compact">
-              <input type="text" id="joinRoomCodeInput" class="modal-input join-code-field" placeholder="Nhập mã hoặc dán link mời..." required />
-              <button type="button" class="btn-paste-code compact" id="btnPasteModalJoinCode">📋 Dán</button>
+        <!-- Rời khỏi nhóm hiện tại -->
+        <div class="leave-group-zone">
+          <p class="leave-group-note">
+            🔒 Mỗi người chỉ được tham gia <strong>1 nhóm</strong>. Nếu muốn tạo nhóm mới hoặc vào link nhóm khác, hãy rời nhóm hiện tại.
+          </p>
+          <button type="button" class="btn-danger-outline full-width" id="btnShowLeaveConfirm">
+            🚪 Rời khỏi nhóm này
+          </button>
+          <div class="leave-confirm-box hidden" id="leaveGroupConfirmBox">
+            <p>Bạn chắc chắn muốn rời nhóm <strong id="leaveConfirmGroupName">này</strong>? Lịch bận của bạn trong nhóm sẽ được gỡ bỏ.</p>
+            <div class="leave-confirm-actions">
+              <button type="button" class="btn-secondary" id="btnCancelLeaveGroup">Ở lại nhóm</button>
+              <button type="button" class="btn-danger-solid" id="btnConfirmLeaveGroup">Xác nhận rời nhóm</button>
             </div>
           </div>
-          <button type="submit" class="btn-outline" style="white-space:nowrap;">Vào nhóm</button>
-        </form>
-
-        <div class="divider-text"><span>HOẶC TẠO NHÓM MỚI</span></div>
-
-        <form id="createRoomForm" class="add-member-form">
-          <div class="form-row-inline stack-on-xs">
-            <div style="flex: 1.6;">
-              <label for="newRoomName">Tên nhóm mới *</label>
-              <input type="text" id="newRoomName" class="modal-input" placeholder="VD: Nhóm Dự Án Mobile" required />
-            </div>
-            <div style="flex: 1;">
-              <label for="newRoomCode">Mã riêng (không bắt buộc)</label>
-              <input type="text" id="newRoomCode" class="modal-input" placeholder="Để trống tự tạo" />
-            </div>
-          </div>
-          <button type="submit" class="btn-primary full-width">+ Tạo nhóm mới & Lấy mã mời</button>
-        </form>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL 4: Mời bạn bè siêu gọn -->
+  <!-- MODAL 4: Chia sẻ Link Nhóm siêu gọn -->
   <div id="groupCreatedModal" class="modal-backdrop hidden">
     <div class="modal-card invite-celebration-modal">
       <div class="modal-sheet-handle" aria-hidden="true"></div>
       <div class="modal-header">
         <div>
-          <span class="modal-tag" id="inviteModalTag">MÃ NHÓM CỦA BẠN</span>
+          <span class="modal-tag" id="inviteModalTag">CHIA SẺ LINK NHÓM</span>
           <h3 id="inviteModalHeading">🎉 Tạo nhóm thành công!</h3>
         </div>
         <button class="modal-close-btn" data-close="groupCreatedModal" aria-label="Đóng">&times;</button>
       </div>
       <div class="modal-body">
         <p class="modal-desc" id="inviteModalSubtext">
-          Gửi mã hoặc link này cho bạn bè để cùng vào nhóm:
+          Gửi link bên dưới cho bạn bè — ai bấm vào link sẽ vào thẳng nhóm của bạn:
         </p>
 
         <div class="created-ticket-box">
@@ -679,20 +677,54 @@
           <div class="created-code-giant" id="createdGroupCodeBig">FT8K2M</div>
         </div>
 
+        <div class="share-link-field-wrap">
+          <label class="share-link-label" for="createdShareLinkInput">🔗 Link chia sẻ nhóm</label>
+          <div class="share-url-bar">
+            <input type="text" id="createdShareLinkInput" class="share-url-input" readonly aria-label="Link chia sẻ nhóm" />
+            <button type="button" class="btn-copy-url-inline" id="btnCopyCreatedLink">Sao chép link</button>
+          </div>
+        </div>
+
         <div class="invite-easy-buttons">
           <button type="button" class="btn-primary btn-share-zalo full-width" id="btnShareInviteMessage">
-            💬 Gửi lời mời qua Zalo / Messenger
+            📲 Chia sẻ qua Zalo / Messenger
           </button>
-          <div class="invite-secondary-grid">
-            <button type="button" class="btn-secondary" id="btnCopyCreatedCode">📋 Chép mã</button>
-            <button type="button" class="btn-secondary" id="btnCopyCreatedLink">🔗 Chép link</button>
-          </div>
+          <button type="button" class="btn-secondary full-width" id="btnCopyCreatedCode">
+            📋 Hoặc chép mã nhóm riêng
+          </button>
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn-outline full-width" data-close="groupCreatedModal">
           Vào bảng lịch →
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: Thông báo khi mở Link mời trong lúc đã thuộc 1 nhóm khác -->
+  <div id="singleGroupConflictModal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-sheet-handle" aria-hidden="true"></div>
+      <div class="modal-header">
+        <div>
+          <span class="modal-tag">Quy định 1 nhóm / người</span>
+          <h3>🔒 Bạn đang ở một nhóm khác</h3>
+        </div>
+        <button class="modal-close-btn" data-close="singleGroupConflictModal" aria-label="Đóng">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc" style="line-height: 1.55;">
+          Mỗi người chỉ được tham gia <strong>1 nhóm duy nhất</strong>. Tài khoản của bạn hiện đang ở nhóm <strong id="conflictCurrentGroupLabel">#TEAM01</strong>.
+        </p>
+        <div class="oauth-guide-box">
+          <strong>Bạn vừa mở link mời của nhóm <span id="conflictTargetGroupLabel">#FT8K2M</span></strong>
+          <p>Nếu muốn chuyển sang nhóm mới này, hệ thống sẽ giúp bạn rời khỏi nhóm cũ trước.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" data-close="singleGroupConflictModal">Ở lại nhóm cũ</button>
+        <button type="button" class="btn-danger-solid" id="btnConfirmSwitchGroup">Rời nhóm cũ & Vào nhóm mới →</button>
       </div>
     </div>
   </div>

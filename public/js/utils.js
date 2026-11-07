@@ -85,6 +85,11 @@ export function extractInviteCode(rawInput) {
   const str = String(rawInput || '').trim();
   if (!str) return '';
 
+  const joinPathMatch = str.match(/\/join\/([A-Za-z0-9_-]{3,32})(?:[/?#&\s]|$)/i);
+  if (joinPathMatch && joinPathMatch[1]) {
+    return normalizeInviteCode(joinPathMatch[1]);
+  }
+
   const urlRoomMatch = str.match(/[?&]room=([A-Za-z0-9_-]{3,32})/i);
   if (urlRoomMatch && urlRoomMatch[1]) {
     return normalizeInviteCode(urlRoomMatch[1]);
@@ -113,4 +118,64 @@ export function slugifyUsernameSuggestion(rawText) {
     .toLowerCase()
     .replace(/[^a-z0-9._@-]/g, '')
     .slice(0, 32);
+}
+
+export function isAvatarImageUrl(avatar) {
+  return typeof avatar === 'string' && /^https?:\/\//i.test(avatar.trim());
+}
+
+export function getAvatarInitials(name, fallback = 'TV') {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return fallback;
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+export function renderAvatarHtml({
+  avatar,
+  name = '',
+  color = '#6366f1',
+  className = 'avatar-circle',
+  extraStyle = ''
+} = {}) {
+  const bg = escapeHtml(color || '#6366f1');
+  const styleAttr = extraStyle ? `background:${bg};${extraStyle}` : `background:${bg}`;
+  const initials = getAvatarInitials(name, !isAvatarImageUrl(avatar) && avatar ? String(avatar) : 'TV');
+
+  if (isAvatarImageUrl(avatar)) {
+    const safeUrl = escapeHtml(String(avatar).trim());
+    return `<span class="${className} has-avatar-img" style="${styleAttr}"><img src="${safeUrl}" alt="" class="avatar-img-fill" referrerpolicy="no-referrer" decoding="async" onerror="this.remove()" /><span class="avatar-initials-fb">${escapeHtml(initials)}</span></span>`;
+  }
+
+  const textVal = String(avatar || initials || 'TV').slice(0, 3);
+  return `<span class="${className}" style="${styleAttr}">${escapeHtml(textVal)}</span>`;
+}
+
+export function applyAvatarElement(el, { avatar, name = '', color = '#6366f1' } = {}) {
+  if (!el) return;
+  const initials = getAvatarInitials(name, !isAvatarImageUrl(avatar) && avatar ? String(avatar) : 'TV');
+  el.style.backgroundColor = color || '#6366f1';
+
+  if (isAvatarImageUrl(avatar)) {
+    el.classList.add('has-avatar-img');
+    el.innerHTML = '';
+    const img = document.createElement('img');
+    img.src = String(avatar).trim();
+    img.alt = name || 'Avatar';
+    img.className = 'avatar-img-fill';
+    img.referrerPolicy = 'no-referrer';
+    img.decoding = 'async';
+    img.addEventListener('error', () => {
+      img.remove();
+      el.classList.remove('has-avatar-img');
+    });
+    const fb = document.createElement('span');
+    fb.className = 'avatar-initials-fb';
+    fb.textContent = initials;
+    el.appendChild(img);
+    el.appendChild(fb);
+  } else {
+    el.classList.remove('has-avatar-img');
+    el.textContent = String(avatar || initials || 'TV').slice(0, 3);
+  }
 }

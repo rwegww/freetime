@@ -428,10 +428,11 @@ describe('Auth, Groups & Shared Group Chat Integration Tests', () => {
     assert.ok(decodedRem.exp - Date.now() > 300 * 24 * 60 * 60 * 1000);
     assert.ok(decodedSes.exp - Date.now() <= 25 * 60 * 60 * 1000);
 
-    // 3. Verify Google OAuth payload with mock Google verification endpoint
+    // 3. Verify Google OAuth payload with mock Google verification endpoint + Google Avatar reuse
     const prevClientId = process.env.GOOGLE_CLIENT_ID;
     process.env.GOOGLE_CLIENT_ID = 'mock-client-id.apps.googleusercontent.com';
     try {
+      const googlePhotoUrl = 'https://lh3.googleusercontent.com/a/colan-google-photo=s96-c';
       const mockFetch = async (url) => {
         if (String(url).includes('id_token=valid_google_jwt')) {
           return {
@@ -441,7 +442,8 @@ describe('Auth, Groups & Shared Group Chat Integration Tests', () => {
               sub: 'google_sub_999888',
               email: 'colan.google@gmail.com',
               email_verified: 'true',
-              name: 'Cô Lan Google'
+              name: 'Cô Lan Google',
+              picture: googlePhotoUrl
             })
           };
         }
@@ -454,15 +456,29 @@ describe('Auth, Groups & Shared Group Chat Integration Tests', () => {
       );
       assert.equal(verifiedProfile.email, 'colan.google@gmail.com');
       assert.equal(verifiedProfile.name, 'Cô Lan Google');
+      assert.equal(verifiedProfile.picture, googlePhotoUrl);
 
       const firstLogin = await dbRepo.findOrCreateGoogleUser(verifiedProfile);
       assert.equal(firstLogin.isNewUser, true);
-      assert.equal(firstLogin.user.avatar, 'CG');
+      assert.equal(firstLogin.user.avatar, googlePhotoUrl);
       assert.ok(firstLogin.user.color.startsWith('#'));
 
-      const secondLogin = await dbRepo.findOrCreateGoogleUser(verifiedProfile);
+      // Updating display name keeps Google profile picture URL intact
+      const renamed = await dbRepo.updateUserProfile(firstLogin.user.id, {
+        name: 'Cô Lan Đã Đổi Tên'
+      });
+      assert.equal(renamed.user.name, 'Cô Lan Đã Đổi Tên');
+      assert.equal(renamed.user.avatar, googlePhotoUrl);
+
+      // Updating Google avatar URL on subsequent login syncs automatically
+      const updatedPhotoUrl = 'https://lh3.googleusercontent.com/a/colan-google-photo-v2=s96-c';
+      const secondLogin = await dbRepo.findOrCreateGoogleUser({
+        ...verifiedProfile,
+        picture: updatedPhotoUrl
+      });
       assert.equal(secondLogin.isNewUser, false);
       assert.equal(secondLogin.user.id, firstLogin.user.id);
+      assert.equal(secondLogin.user.avatar, updatedPhotoUrl);
 
       // Trying password login on Google-only account gives friendly guidance
       const resPwOnGoogle = await fetch(`${baseUrl}/api/auth/login`, {
@@ -480,5 +496,99 @@ describe('Auth, Groups & Shared Group Chat Integration Tests', () => {
       if (prevClientId === undefined) delete process.env.GOOGLE_CLIENT_ID;
       else process.env.GOOGLE_CLIENT_ID = prevClientId;
     }
+  });
+
+  it('Hỗ trợ Share Link (/join/:code), chặn tham gia > 1 nhóm (409) và cho phép rời nhóm để đổi nhóm', async () => {
+    // 1. Direct share link HTML route (/join/:code) & public invite preview
+    const resJoinHtml = await fetch(`${baseUrl}/join/${groupCode}`);
+    assert.equal(resJoinHtml.status, 200);
+    const joinHtml = await resJoinHtml.text();
+    assert.ok(joinHtml.includes('FreeTime Sync'));
+
+    const resPublicInvite = await fetch(`${baseUrl}/api/auth/invite/${groupCode}`);
+    assert.equal(resPublicInvite.status, 200);
+    const pubInvite = await resPublicInvite.json();
+    assert.equal(pubInvite.found, true);
+    assert.equal(pubInvite.code, groupCode);
+    assert.equal(pubInvite.name, 'Nhóm Đồ Án Chung');
+    assert.equal(pubInvite.memberCount, 2);
+
+    // 2. User 1 already belongs to groupCode -> creating a 2nd group is blocked (409)
+    const resSecondCreate = await fetch(`${baseUrl}/api/groups`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user1Token}`
+      },
+      body: JSON.stringify({ name: 'Nhóm Thứ Hai Bị Chặn' })
+    });
+    assert.equal(resSecondCreate.status, 409);
+    const secondCreateErr = await resSecondCreate.json();
+    assert.equal(secondCreateErr.code, 'ALREADY_IN_GROUP');
+    assert.equal(secondCreateErr.currentRoom.code, groupCode);
+
+    // 3. Outsider (0 groups) creates their own group -> 201
+    const resOutsiderCreate = await fetch(`${baseUrl}/api/groups`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${outsiderToken}`
+      },
+      body: JSON.stringify({ name: 'Nhóm Riêng Của Outsider' })
+    });
+    assert.equal(resOutsiderCreate.status, 201);
+    const outsiderGroup = (await resOutsiderCreate.json()).room;
+
+    // 4. User 2 already belongs to groupCode -> joining outsiderGroup via share link is blocked (409)
+    const shareLink = `https://freetime-olive.vercel.app/join/${outsiderGroup.code}`;
+    const resSecondJoin = await fetch(`${baseUrl}/api/groups/join`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user2Token}`
+      },
+      body: JSON.stringify({ code: shareLink })
+    });
+    assert.equal(resSecondJoin.status, 409);
+    const secondJoinErr = await resSecondJoin.json();
+    assert.equal(secondJoinErr.code, 'ALREADY_IN_GROUP');
+    assert.equal(secondJoinErr.currentRoom.code, groupCode);
+
+    // 5. Re-joining own current group via share link is idempotent (200)
+    const resSameJoin = await fetch(`${baseUrl}/api/groups/join`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user2Token}`
+      },
+      body: JSON.stringify({ code: `https://freetime-olive.vercel.app/join/${groupCode}` })
+    });
+    assert.equal(resSameJoin.status, 200);
+    const sameJoined = await resSameJoin.json();
+    assert.equal(sameJoined.isNew, false);
+
+    // 6. Outsider leaves outsiderGroup -> now has 0 groups -> CAN join groupCode via /join/:code link!
+    const resLeave = await fetch(`${baseUrl}/api/groups/${outsiderGroup.code}/leave`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${outsiderToken}` }
+    });
+    assert.equal(resLeave.status, 200);
+    const leaveBody = await resLeave.json();
+    assert.equal(leaveBody.ok, true);
+    assert.equal(leaveBody.rooms.length, 0);
+
+    const resJoinAfterLeave = await fetch(`${baseUrl}/api/groups/join`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${outsiderToken}`
+      },
+      body: JSON.stringify({ code: `https://freetime-olive.vercel.app/join/${groupCode}` })
+    });
+    assert.equal(resJoinAfterLeave.status, 200);
+    const joinedAfterLeave = await resJoinAfterLeave.json();
+    assert.equal(joinedAfterLeave.isNew, true);
+    assert.equal(joinedAfterLeave.room.code, groupCode);
+    assert.equal(joinedAfterLeave.room.members.length, 3);
   });
 });

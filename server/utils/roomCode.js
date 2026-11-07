@@ -9,6 +9,11 @@ function extractInviteCode(rawInput) {
   const str = String(rawInput || '').trim();
   if (!str) return '';
 
+  const joinPathMatch = str.match(/\/join\/([A-Za-z0-9_-]{3,32})(?:[/?#&\s]|$)/i);
+  if (joinPathMatch && joinPathMatch[1]) {
+    return normalizeRoomCode(joinPathMatch[1]);
+  }
+
   const urlRoomMatch = str.match(/[?&]room=([A-Za-z0-9_-]{3,32})/i);
   if (urlRoomMatch && urlRoomMatch[1]) {
     return normalizeRoomCode(urlRoomMatch[1]);

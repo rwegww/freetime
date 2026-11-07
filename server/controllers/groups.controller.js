@@ -142,7 +142,7 @@ async function joinGroup(req, res, next) {
 
     if (isNew) {
       const sysMsg = buildSystemMessage(
-        `👋 ${member.name} (${member.role}) đã tham gia nhóm! Cùng trao đổi và báo lịch tại đây nhé.`
+        `👋 ${member.name} đã tham gia nhóm! Cùng trao đổi và báo lịch tại đây nhé.`
       );
       await dbRepo.addMessage(cleanCode, sysMsg);
       if (io) {
@@ -168,6 +168,47 @@ async function joinGroup(req, res, next) {
   }
 }
 
+async function leaveGroup(req, res, next) {
+  try {
+    const cleanCode = normalizeRoomCode(req.params.code);
+    const result = await dbRepo.leaveGroupForUser(cleanCode, req.user);
+    if (!result) {
+      return res.status(404).json({ error: `Nhóm #${cleanCode} không tồn tại.` });
+    }
+    if (result.notMember) {
+      return res.status(400).json({ error: 'Bạn hiện không phải thành viên của nhóm này.' });
+    }
+
+    const { room, removedMember } = result;
+    if (restHeartbeats[cleanCode] && removedMember) {
+      delete restHeartbeats[cleanCode][removedMember.id];
+    }
+
+    const io = getIo();
+    if (removedMember) {
+      const sysMsg = buildSystemMessage(`👋 ${removedMember.name} đã rời khỏi nhóm.`);
+      await dbRepo.addMessage(cleanCode, sysMsg);
+      if (io) {
+        io.to(cleanCode).emit('new_message', sysMsg);
+        io.to(cleanCode).emit('room_updated', {
+          room,
+          onlineMemberIds: getOnlineMemberIds(cleanCode)
+        });
+      }
+    }
+
+    const remainingRooms = await dbRepo.listUserRooms(req.user.id);
+    res.json({
+      ok: true,
+      leftCode: cleanCode,
+      leftName: room.name,
+      rooms: remainingRooms.map(r => formatRoomSummary(r, req.user.id))
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function getGroupByCode(req, res, next) {
   try {
     const cleanCode = normalizeRoomCode(req.params.code);
@@ -178,11 +219,16 @@ async function getGroupByCode(req, res, next) {
 
     const myMember = room.members.find(m => m.userId === req.user.id);
     if (!myMember) {
+      const userRooms = await dbRepo.listUserRooms(req.user.id);
+      const otherRoom = userRooms.find(r => r.code !== cleanCode) || null;
       return res.status(403).json({
-        error: `Bạn chưa tham gia nhóm "${room.name}" (#${cleanCode}).`,
+        error: otherRoom
+          ? `Mỗi người chỉ được tham gia 1 nhóm. Bạn đang ở nhóm "${otherRoom.name}" (#${otherRoom.code}).`
+          : `Bạn chưa tham gia nhóm "${room.name}" (#${cleanCode}).`,
         code: cleanCode,
         roomName: room.name,
-        canJoin: true
+        canJoin: !otherRoom,
+        currentRoom: otherRoom ? { code: otherRoom.code, name: otherRoom.name } : null
       });
     }
 
@@ -320,6 +366,7 @@ module.exports = {
   createGroup,
   previewGroupByCode,
   joinGroup,
+  leaveGroup,
   getGroupByCode,
   updateMyGroupSchedule,
   postGroupMessage,

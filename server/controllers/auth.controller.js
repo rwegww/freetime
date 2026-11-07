@@ -10,6 +10,7 @@ const {
   verifyGoogleAuthPayload,
   sanitizeUser
 } = require('../services/auth.service');
+const { extractInviteCode, isValidRoomCode } = require('../utils/roomCode');
 const { getOnlineMemberIds, getIo } = require('../sockets');
 
 function formatRoomSummary(room, userId) {
@@ -28,6 +29,29 @@ async function getAuthConfig(req, res, next) {
   try {
     const authConfig = await getPublicAuthConfig();
     res.json(authConfig);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function previewInvite(req, res, next) {
+  try {
+    const rawCode = req.query.code !== undefined ? req.query.code : req.params.code;
+    const cleanCode = extractInviteCode(rawCode);
+    if (!isValidRoomCode(cleanCode)) {
+      return res.json({ found: false, valid: false, code: cleanCode });
+    }
+    const room = await dbRepo.getRoom(cleanCode);
+    if (!room) {
+      return res.json({ found: false, valid: true, code: cleanCode });
+    }
+    return res.json({
+      found: true,
+      valid: true,
+      code: room.code,
+      name: room.name,
+      memberCount: Array.isArray(room.members) ? room.members.length : 0
+    });
   } catch (err) {
     next(err);
   }
@@ -183,6 +207,7 @@ async function updateProfile(req, res, next) {
 
 module.exports = {
   getAuthConfig,
+  previewInvite,
   register,
   login,
   googleAuth,

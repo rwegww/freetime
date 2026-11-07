@@ -49,8 +49,8 @@ function buildSteps() {
     {
       getTarget: () => document.getElementById('btnCopyRoomLink'),
       maxSpotHeight: 56,
-      title: 'Mời bạn bè vào nhóm',
-      text: 'Bấm vào đây để lấy Mã nhóm hoặc gửi link mời qua Zalo, Messenger.'
+      title: 'Chia sẻ link nhóm',
+      text: 'Bấm vào đây để lấy Link mời nhóm và gửi qua Zalo, Messenger cho bạn bè.'
     },
     {
       getTarget: () =>

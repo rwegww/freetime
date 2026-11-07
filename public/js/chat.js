@@ -1,4 +1,4 @@
-import { formatHourRange, openModal, showToast, escapeHtml } from './utils.js';
+import { formatHourRange, openModal, showToast, escapeHtml, renderAvatarHtml } from './utils.js';
 import { state } from './state.js';
 import { emitVoteProposal } from './socket.js';
 
@@ -14,8 +14,8 @@ export function renderChatHeader() {
     const isOnline = onlineSet.has(m.id);
     const isMe = m.id === state.activeMemberId;
     return `
-      <div class="chat-member-pill ${isMe ? 'is-me-pill' : ''}" data-member-info="${m.id}" title="${escapeHtml(m.name)} — ${escapeHtml(m.role)} (${isOnline ? 'Đang online' : 'Offline'})" style="cursor:pointer">
-        <span class="chip-avatar" style="background:${m.color}">${escapeHtml(m.avatar)}</span>
+      <div class="chat-member-pill ${isMe ? 'is-me-pill' : ''}" data-member-info="${m.id}" title="${escapeHtml(m.name)} (${isOnline ? 'Đang online' : 'Offline'})" style="cursor:pointer">
+        ${renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'chip-avatar' })}
         <span>${escapeHtml(m.name)}${isMe ? ' (Bạn)' : ''}</span>
         <span class="status-dot ${isOnline ? 'online' : ''}"></span>
       </div>
@@ -56,6 +56,20 @@ export function createMessageElement(msg) {
   }
 
   const isMe = msg.memberId === state.activeMemberId;
+  const liveMember =
+    state.room && Array.isArray(state.room.members)
+      ? state.room.members.find(x => x.id === msg.memberId)
+      : null;
+  const resolvedAvatar = (liveMember && liveMember.avatar) || msg.memberAvatar || 'TV';
+  const resolvedColor = (liveMember && liveMember.color) || msg.memberColor || '#4f46e5';
+  const resolvedName = (liveMember && liveMember.name) || msg.memberName || 'Thành viên';
+  const msgAvatarHtml = renderAvatarHtml({
+    avatar: resolvedAvatar,
+    name: resolvedName,
+    color: resolvedColor,
+    className: 'avatar-circle'
+  });
+
   const wrapper = document.createElement('div');
   wrapper.className = `chat-msg-item ${isMe ? 'is-me' : ''}`;
   wrapper.id = `chat-msg-${msg.id}`;
@@ -81,10 +95,10 @@ export function createMessageElement(msg) {
     const myVote = state.activeMemberId ? votes[state.activeMemberId] : null;
 
     wrapper.innerHTML = `
-      <span class="avatar-circle" style="background:${msg.memberColor || '#4f46e5'}">${escapeHtml(msg.memberAvatar || 'TV')}</span>
+      ${msgAvatarHtml}
       <div class="chat-msg-body">
         <div class="chat-msg-meta">
-          <strong>${escapeHtml(msg.memberName)}</strong>
+          <strong>${escapeHtml(resolvedName)}</strong>
           <span>${timeStr}</span>
         </div>
         <div class="proposal-card">
@@ -119,10 +133,10 @@ export function createMessageElement(msg) {
   }
 
   wrapper.innerHTML = `
-    <span class="avatar-circle" style="background:${msg.memberColor || '#4f46e5'}">${escapeHtml(msg.memberAvatar || 'TV')}</span>
+    ${msgAvatarHtml}
     <div class="chat-msg-body">
       <div class="chat-msg-meta">
-        <strong>${escapeHtml(msg.memberName)}</strong>
+        <strong>${escapeHtml(resolvedName)}</strong>
         <span>${timeStr}</span>
       </div>
       <div class="chat-bubble">${escapeHtml(msg.text)}</div>

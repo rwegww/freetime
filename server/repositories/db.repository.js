@@ -645,17 +645,39 @@ async function createUser({ username, name, role, color, passwordHash }) {
   return newUser;
 }
 
-async function findOrCreateGoogleUser({ email, name, sub }) {
+function isAvatarUrl(val) {
+  return typeof val === 'string' && /^https?:\/\//i.test(val.trim());
+}
+
+async function findOrCreateGoogleUser({ email, name, sub, picture }) {
   await ensureCloudLoaded();
   const cleanEmail = String(email || '').trim().toLowerCase();
   const cleanSub = String(sub || cleanEmail).trim();
   const oauthHashTag = `oauth$google$${cleanSub}`;
+  const cleanPicture = isAvatarUrl(picture) ? String(picture).trim() : '';
 
   const existing = Object.values(db.users).find(
     u => u.passwordHash === oauthHashTag || u.username.toLowerCase() === cleanEmail
   );
 
   if (existing) {
+    if (cleanPicture && existing.avatar !== cleanPicture) {
+      existing.avatar = cleanPicture;
+      existing.updatedAt = new Date().toISOString();
+      const affectedRoomCodes = [];
+      for (const room of Object.values(db.rooms)) {
+        let changed = false;
+        for (const m of room.members || []) {
+          if (m.userId === existing.id) {
+            m.avatar = cleanPicture;
+            m.updatedAt = existing.updatedAt;
+            changed = true;
+          }
+        }
+        if (changed) affectedRoomCodes.push(room.code);
+      }
+      await persistDB(affectedRoomCodes, existing.id);
+    }
     return { user: existing, isNewUser: false };
   }
 
@@ -670,7 +692,7 @@ async function findOrCreateGoogleUser({ email, name, sub }) {
     name: displayName.length >= 2 ? displayName : `Bạn ${displayName}`,
     role: 'Thành viên',
     color: chosenColor,
-    avatar: makeAvatar(displayName),
+    avatar: cleanPicture || makeAvatar(displayName),
     passwordHash: oauthHashTag,
     createdAt: now,
     updatedAt: now
@@ -688,7 +710,9 @@ async function updateUserProfile(userId, { name, role, color }) {
 
   if (name && String(name).trim().length >= 2) {
     user.name = String(name).trim();
-    user.avatar = makeAvatar(user.name);
+    if (!isAvatarUrl(user.avatar)) {
+      user.avatar = makeAvatar(user.name);
+    }
   }
   if (role !== undefined) {
     user.role = String(role || '').trim() || 'Thành viên';
@@ -735,6 +759,19 @@ async function getUserMemberInRoom(code, userId) {
 
 async function createGroupForUser(user, { code, name, description }) {
   await ensureCloudLoaded();
+  const existingUserRoom = Object.values(db.rooms).find(
+    r => Array.isArray(r.members) && r.members.some(m => m.userId === user.id)
+  );
+  if (existingUserRoom) {
+    const err = new Error(
+      `Mỗi người chỉ được tham gia 1 nhóm. Bạn đang ở nhóm "${existingUserRoom.name}" (#${existingUserRoom.code}) — hãy rời nhóm hiện tại nếu muốn tạo nhóm mới.`
+    );
+    err.status = 409;
+    err.code = 'ALREADY_IN_GROUP';
+    err.currentRoom = { code: existingUserRoom.code, name: existingUserRoom.name };
+    throw err;
+  }
+
   let cleanCode = code ? normalizeRoomCode(code) : '';
   if (cleanCode) {
     if (db.rooms[cleanCode]) {
@@ -777,7 +814,7 @@ async function createGroupForUser(user, { code, name, description }) {
         memberColor: '#64748b',
         memberAvatar: 'HT',
         type: 'system',
-        text: `🎉 Nhóm "${roomName}" (#${cleanCode}) đã được tạo bởi ${user.name}! Hãy gửi mã #${cleanCode} hoặc link mời để các thành viên cùng vào trò chuyện chung.`,
+        text: `🎉 Nhóm "${roomName}" (#${cleanCode}) đã được tạo bởi ${user.name}! Hãy bấm nút "Chia sẻ link" ở trên đầu trang để gửi link mời cho các thành viên nhé.`,
         createdAt: now
       }
     ]
@@ -799,6 +836,19 @@ async function joinGroupForUser(code, user) {
     return { room, member: existing, isNew: false };
   }
 
+  const otherRoom = Object.values(db.rooms).find(
+    r => r.code !== cleanCode && Array.isArray(r.members) && r.members.some(m => m.userId === user.id)
+  );
+  if (otherRoom) {
+    const err = new Error(
+      `Mỗi người chỉ được tham gia 1 nhóm. Bạn đang ở nhóm "${otherRoom.name}" (#${otherRoom.code}) — hãy rời nhóm hiện tại trước khi vào nhóm mới.`
+    );
+    err.status = 409;
+    err.code = 'ALREADY_IN_GROUP';
+    err.currentRoom = { code: otherRoom.code, name: otherRoom.name };
+    throw err;
+  }
+
   const now = new Date().toISOString();
   const newMember = {
     id: 'mem_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
@@ -813,6 +863,48 @@ async function joinGroupForUser(code, user) {
   room.members.push(newMember);
   await persistDB(cleanCode);
   return { room, member: newMember, isNew: true };
+}
+
+async function leaveGroupForUser(code, user) {
+  await ensureCloudLoaded();
+  const cleanCode = normalizeRoomCode(code);
+  const room = db.rooms[cleanCode];
+  if (!room) return null;
+
+  const myMembers = room.members.filter(m => m.userId === user.id);
+  if (myMembers.length === 0) {
+    return { room, removedMember: null, notMember: true };
+  }
+
+  const removedIds = new Set(myMembers.map(m => m.id));
+  room.members = room.members.filter(m => m.userId !== user.id);
+
+  for (const weekKey of Object.keys(room.schedules || {})) {
+    const weekMap = room.schedules[weekKey];
+    if (!weekMap) continue;
+    for (const remId of removedIds) {
+      delete weekMap[remId];
+    }
+  }
+
+  if (hasSupabaseConfig()) {
+    try {
+      const sqlReady = await checkSupabaseSqlTables();
+      if (sqlReady) {
+        await Promise.all(
+          Array.from(removedIds).map(remId =>
+            fetch(`${config.supabase.url}/rest/v1/members?id=eq.${encodeURIComponent(remId)}`, {
+              method: 'DELETE',
+              headers: supabaseHeaders()
+            }).catch(() => {})
+          )
+        );
+      }
+    } catch (_) {}
+  }
+
+  await persistDB(cleanCode);
+  return { room, removedMember: myMembers[0], notMember: false };
 }
 
 // ==================== LEGACY / PUBLIC ROOMS INTERFACE ====================
@@ -987,6 +1079,7 @@ module.exports = {
   getUserMemberInRoom,
   createGroupForUser,
   joinGroupForUser,
+  leaveGroupForUser,
   listRooms,
   getRoom,
   createRoom,

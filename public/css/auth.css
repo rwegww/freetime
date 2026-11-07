@@ -631,12 +631,32 @@ body[data-app-stage="workspace"] .onboarding-screen {
   gap: 16px;
 }
 
+.onboarding-title-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
 .onboarding-minimal-title {
   font-size: 19px;
   font-weight: 800;
   letter-spacing: -0.02em;
   text-align: center;
   color: var(--text-main);
+}
+
+.single-group-rule-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 700;
 }
 
 .onboarding-choice-grid {
@@ -1182,7 +1202,213 @@ body[data-app-stage="workspace"] .onboarding-screen {
 .group-members-readonly {
   display: flex;
   flex-wrap: wrap;
+  gap: 7px;
+}
+
+.room-member-mini-chip {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
+  padding: 5px 10px 5px 5px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.room-member-mini-chip.is-me {
+  background: var(--primary-soft);
+  border-color: #c7d2fe;
+  color: var(--primary);
+}
+
+.room-member-mini-chip .mini-av {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ==================== SINGLE GROUP & SHARE LINK BOX ==================== */
+.current-single-group-box {
+  background: linear-gradient(135deg, #eef2ff 0%, #ecfdf5 100%);
+  border: 1.5px solid #c7d2fe;
+  border-radius: 14px;
+  padding: 13px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.current-single-group-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.current-single-group-info strong {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.current-single-group-info span {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.share-link-field-wrap {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 13px;
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.share-link-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.share-url-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.share-url-input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 11px;
+  border-radius: 9px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  outline: none;
+  text-overflow: ellipsis;
+}
+
+.share-url-input:focus {
+  border-color: var(--primary);
+}
+
+.btn-copy-url-inline {
+  flex-shrink: 0;
+  padding: 0 13px;
+  border-radius: 9px;
+  border: none;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+
+.btn-copy-url-inline:hover {
+  background: var(--primary-hover);
+}
+
+.btn-copy-url-inline.copied-ok {
+  background: var(--emerald-dark);
+}
+
+.leave-group-zone {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.leave-group-note {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.leave-confirm-box {
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.leave-confirm-box p {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #991b1b;
+}
+
+.leave-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-danger-solid {
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  padding: 9px 14px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-danger-solid:hover {
+  background: #b91c1c;
+}
+
+/* ==================== GOOGLE PROFILE PHOTO AVATAR ==================== */
+.has-avatar-img {
+  position: relative;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+.avatar-img-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  display: block;
+  z-index: 1;
+}
+
+.avatar-initials-fb {
+  position: relative;
+  z-index: 0;
+  line-height: 1;
 }
 
 /* ==================== RESPONSIVE AUTH & ONBOARDING ==================== */
