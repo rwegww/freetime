@@ -14,7 +14,11 @@ import {
   extractInviteCode,
   slugifyUsernameSuggestion,
   renderAvatarHtml,
-  applyAvatarElement
+  applyAvatarElement,
+  playNotificationChime,
+  requestBrowserNotificationPermission,
+  showSystemNotification,
+  updateDocumentTitle
 } from './utils.js';
 import {
   state,
@@ -63,7 +67,11 @@ import {
 import {
   renderChatHeader,
   renderChatMessages,
-  createMessageElement
+  createMessageElement,
+  showChatIncomingToast,
+  dismissChatIncomingToast,
+  highlightLatestMessage,
+  initChatNotifications
 } from './chat.js';
 import {
   initCloudTourEvents,
@@ -394,6 +402,13 @@ function enterLoadedGroup(room, member, onlineMemberIds = [], { deferAutoTour = 
   state.onlineMemberIds = onlineMemberIds || [];
   state.unreadChatCount = 0;
   updateUnreadBadge();
+  dismissChatIncomingToast();
+
+  if (window.innerWidth <= 960) {
+    switchMobileTab(state.activeMobileTab || 'schedule');
+  }
+
+  requestBrowserNotificationPermission();
 
   if (state.currentUser) {
     localStorage.setItem(`freetime_last_room_${state.currentUser.id}`, room.code);
@@ -581,6 +596,7 @@ function switchMobileTab(tab) {
   if (tab === 'chat') {
     state.unreadChatCount = 0;
     updateUnreadBadge();
+    dismissChatIncomingToast();
     requestAnimationFrame(() => {
       const container = document.getElementById('chatMessagesList');
       if (container) container.scrollTop = container.scrollHeight;
@@ -590,13 +606,43 @@ function switchMobileTab(tab) {
 
 function updateUnreadBadge() {
   const badge = document.getElementById('mobileChatUnreadBadge');
-  if (!badge) return;
-  if (state.unreadChatCount > 0) {
-    badge.textContent = state.unreadChatCount > 9 ? '9+' : String(state.unreadChatCount);
-    badge.classList.remove('hidden');
-  } else {
-    badge.classList.add('hidden');
+  const alertPill = document.getElementById('mobileChatUnreadPill');
+  const navItem = document.getElementById('btnTabChat');
+  const headerBadge = document.getElementById('chatHeaderUnreadBadge');
+  const count = state.unreadChatCount || 0;
+
+  if (badge) {
+    if (count > 0) {
+      badge.textContent = count > 9 ? '9+' : String(count);
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
   }
+
+  if (alertPill) {
+    if (count > 0) {
+      alertPill.textContent = count > 1 ? `${count} mới` : 'Mới';
+      alertPill.classList.remove('hidden');
+    } else {
+      alertPill.classList.add('hidden');
+    }
+  }
+
+  if (navItem) {
+    navItem.classList.toggle('has-unread', count > 0);
+  }
+
+  if (headerBadge) {
+    if (count > 0) {
+      headerBadge.textContent = `${count} tin mới`;
+      headerBadge.classList.remove('hidden');
+    } else {
+      headerBadge.classList.add('hidden');
+    }
+  }
+
+  updateDocumentTitle(count);
 }
 
 async function copyTextSafe(text) {
@@ -1348,6 +1394,12 @@ function bindWorkspaceEvents() {
     onAfterApply: () => renderAll()
   });
 
+  initChatNotifications({
+    onOpenChat: () => {
+      if (window.innerWidth <= 960) switchMobileTab('chat');
+    }
+  });
+
   document.querySelectorAll('.mobile-nav-item[data-tab]').forEach(btn => {
     btn.addEventListener('click', () => switchMobileTab(btn.dataset.tab));
   });
@@ -1792,12 +1844,62 @@ function initSocketListeners() {
       if (!exists) {
         state.room.messages.push(msg);
         const container = document.getElementById('chatMessagesList');
-        container.appendChild(createMessageElement(msg));
-        container.scrollTop = container.scrollHeight;
+        const scrollPill = document.getElementById('chatNewMsgScrollPill');
+        const senderNameEl = document.getElementById('chatNewMsgSender');
 
-        if (window.innerWidth <= 960 && state.activeMobileTab !== 'chat' && msg.memberId !== state.activeMemberId) {
-          state.unreadChatCount += 1;
+        const isAtBottom = container
+          ? (container.scrollHeight - container.scrollTop - container.clientHeight) < 90
+          : true;
+
+        if (container) {
+          container.appendChild(createMessageElement(msg));
+        }
+
+        const isMe = msg.memberId === state.activeMemberId;
+        if (isMe) {
+          if (container) container.scrollTop = container.scrollHeight;
+          if (scrollPill) scrollPill.classList.add('hidden');
+          return;
+        }
+
+        const isViewingChat = (window.innerWidth > 960 || state.activeMobileTab === 'chat');
+        const isWindowActive = typeof document !== 'undefined' && !document.hidden;
+
+        if (isViewingChat && isWindowActive) {
+          if (isAtBottom) {
+            if (container) container.scrollTop = container.scrollHeight;
+            if (scrollPill) scrollPill.classList.add('hidden');
+          } else {
+            if (scrollPill && senderNameEl) {
+              senderNameEl.textContent = msg.memberName || 'Thành viên';
+              scrollPill.classList.remove('hidden');
+            }
+          }
+        } else {
+          state.unreadChatCount = (state.unreadChatCount || 0) + 1;
           updateUnreadBadge();
+
+          showChatIncomingToast(msg, () => {
+            if (window.innerWidth <= 960) switchMobileTab('chat');
+            highlightLatestMessage();
+          });
+
+          playNotificationChime();
+          if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+
+          const senderName = msg.memberName || 'Thành viên';
+          const notifBody = msg.type === 'proposal' && msg.proposal
+            ? `📅 Đề xuất hẹn: ${msg.proposal.title || 'Hẹn nhóm'} (${msg.proposal.dayName} ${msg.proposal.startHour}h-${msg.proposal.endHour}h)`
+            : (msg.text || 'Tin nhắn mới');
+
+          showSystemNotification({
+            title: `💬 ${senderName} • Nhóm ${state.room.name || state.room.code}`,
+            body: notifBody,
+            onClick: () => {
+              if (window.innerWidth <= 960) switchMobileTab('chat');
+              highlightLatestMessage();
+            }
+          });
         }
       }
     },

@@ -453,13 +453,19 @@
           <div>
             <h2>Trò chuyện nhóm</h2>
           </div>
+          <span class="chat-header-unread-chip hidden" id="chatHeaderUnreadBadge">0 mới</span>
         </div>
         <span class="online-badge" id="chatOnlineBadge">1 online</span>
       </div>
 
       <div class="chat-members-bar" id="chatMembersAvatars"></div>
 
-      <div class="chat-messages-container" id="chatMessagesList"></div>
+      <div class="chat-messages-wrap">
+        <div class="chat-messages-container" id="chatMessagesList"></div>
+        <button type="button" class="chat-new-msg-pill hidden" id="chatNewMsgScrollPill" title="Cuộn xuống xem tin nhắn mới">
+          <span>↓ Tin mới từ <strong id="chatNewMsgSender">Thành viên</strong></span>
+        </button>
+      </div>
 
       <div class="chat-typing-indicator hidden" id="chatTypingIndicator">
         <span class="typing-dots"><i></i><i></i><i></i></span>
@@ -505,6 +511,7 @@
         <span class="mobile-unread-badge hidden" id="mobileChatUnreadBadge">0</span>
       </div>
       <span>Nhắn tin</span>
+      <span class="mobile-unread-pill hidden" id="mobileChatUnreadPill">Mới</span>
     </button>
   </nav>
 
@@ -893,6 +900,26 @@
       <div class="cloud-tour-footer">
         <div class="cloud-tour-dots" id="cloudTourDots" aria-hidden="true"></div>
         <button type="button" class="btn-cloud-next" id="btnCloudTourNext">Tiếp theo →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- THÔNG BÁO TIN NHẮN MỚI NỔI (CHAT TOAST NOTIFICATION) -->
+  <div id="chatIncomingToast" class="chat-incoming-toast hidden" role="alert" aria-live="assertive">
+    <div class="chat-toast-card" id="chatToastCard">
+      <div class="chat-toast-left">
+        <span class="avatar-circle" id="chatToastAvatar"></span>
+      </div>
+      <div class="chat-toast-body">
+        <div class="chat-toast-head">
+          <strong id="chatToastSender">Thành viên</strong>
+          <span class="chat-toast-tag">Tin nhắn mới</span>
+        </div>
+        <p class="chat-toast-snippet" id="chatToastSnippet">Nội dung tin nhắn...</p>
+      </div>
+      <div class="chat-toast-actions">
+        <button type="button" class="btn-toast-view" id="btnChatToastView">Xem tin</button>
+        <button type="button" class="btn-toast-close" id="btnChatToastClose" aria-label="Đóng thông báo">&times;</button>
       </div>
     </div>
   </div>

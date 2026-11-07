@@ -1,6 +1,15 @@
-import { formatHourRange, openModal, showToast, escapeHtml, renderAvatarHtml } from './utils.js';
+import {
+  formatHourRange,
+  openModal,
+  showToast,
+  escapeHtml,
+  renderAvatarHtml,
+  applyAvatarElement
+} from './utils.js';
 import { state } from './state.js';
 import { emitVoteProposal } from './socket.js';
+
+let toastDismissTimer = null;
 
 export function renderChatHeader() {
   if (!state.room) return;
@@ -143,4 +152,108 @@ export function createMessageElement(msg) {
     </div>
   `;
   return wrapper;
+}
+
+// ==================== THÔNG BÁO TIN NHẮN MỚI NỔI & CUỘN TRONG CHAT ====================
+
+export function showChatIncomingToast(msg, onOpenChat) {
+  const toastEl = document.getElementById('chatIncomingToast');
+  const avatarEl = document.getElementById('chatToastAvatar');
+  const senderEl = document.getElementById('chatToastSender');
+  const snippetEl = document.getElementById('chatToastSnippet');
+  if (!toastEl) return;
+
+  clearTimeout(toastDismissTimer);
+
+  const liveMember =
+    state.room && Array.isArray(state.room.members)
+      ? state.room.members.find(x => x.id === msg.memberId)
+      : null;
+  const senderName = (liveMember && liveMember.name) || msg.memberName || 'Thành viên';
+  const avatar = (liveMember && liveMember.avatar) || msg.memberAvatar || 'TV';
+  const color = (liveMember && liveMember.color) || msg.memberColor || '#6366f1';
+
+  if (avatarEl) {
+    applyAvatarElement(avatarEl, { avatar, name: senderName, color });
+  }
+  if (senderEl) {
+    senderEl.textContent = senderName;
+  }
+  if (snippetEl) {
+    if (msg.type === 'proposal' && msg.proposal) {
+      snippetEl.textContent = `📅 Đề xuất hẹn: ${msg.proposal.title || 'Hẹn nhóm'} (${msg.proposal.dayName} ${msg.proposal.startHour}h-${msg.proposal.endHour}h)`;
+    } else {
+      snippetEl.textContent = msg.text || 'Đã gửi một tin nhắn';
+    }
+  }
+
+  toastEl.classList.remove('hidden');
+
+  toastDismissTimer = setTimeout(() => {
+    dismissChatIncomingToast();
+  }, 5000);
+}
+
+export function dismissChatIncomingToast() {
+  clearTimeout(toastDismissTimer);
+  const toastEl = document.getElementById('chatIncomingToast');
+  if (toastEl) toastEl.classList.add('hidden');
+}
+
+export function highlightLatestMessage() {
+  requestAnimationFrame(() => {
+    const container = document.getElementById('chatMessagesList');
+    if (!container) return;
+    const lastMsg = container.querySelector('.chat-msg-item:last-child');
+    if (lastMsg) {
+      lastMsg.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      lastMsg.classList.remove('msg-highlight');
+      void lastMsg.offsetWidth;
+      lastMsg.classList.add('msg-highlight');
+      setTimeout(() => lastMsg.classList.remove('msg-highlight'), 2200);
+    }
+  });
+}
+
+export function initChatNotifications({ onOpenChat } = {}) {
+  const card = document.getElementById('chatToastCard');
+  const closeBtn = document.getElementById('btnChatToastClose');
+  const viewBtn = document.getElementById('btnChatToastView');
+  const scrollPill = document.getElementById('chatNewMsgScrollPill');
+  const container = document.getElementById('chatMessagesList');
+
+  const handleOpen = (e) => {
+    if (e && e.target && e.target.closest('#btnChatToastClose')) return;
+    dismissChatIncomingToast();
+    if (typeof onOpenChat === 'function') onOpenChat();
+    highlightLatestMessage();
+  };
+
+  if (card) card.addEventListener('click', handleOpen);
+  if (viewBtn) {
+    viewBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleOpen(e);
+    });
+  }
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dismissChatIncomingToast();
+    });
+  }
+
+  if (scrollPill && container) {
+    scrollPill.addEventListener('click', () => {
+      scrollPill.classList.add('hidden');
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    });
+
+    container.addEventListener('scroll', () => {
+      const distFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (distFromBottom < 70) {
+        scrollPill.classList.add('hidden');
+      }
+    });
+  }
 }

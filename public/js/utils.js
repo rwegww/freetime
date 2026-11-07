@@ -190,3 +190,90 @@ export function applyAvatarElement(el, { avatar, name = '', color = '#6366f1' } 
     el.textContent = String(avatar || initials || 'TV').slice(0, 3);
   }
 }
+
+// ==================== THÔNG BÁO ÂM THANH & TRÌNH DUYỆT ====================
+let notificationAudioCtx = null;
+let lastChimeTimestamp = 0;
+
+export function playNotificationChime() {
+  const nowMs = Date.now();
+  if (nowMs - lastChimeTimestamp < 500) return;
+  lastChimeTimestamp = nowMs;
+
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    if (!notificationAudioCtx) {
+      notificationAudioCtx = new AudioContextClass();
+    }
+    if (notificationAudioCtx.state === 'suspended') {
+      notificationAudioCtx.resume().catch(() => {});
+    }
+    const t = notificationAudioCtx.currentTime;
+
+    const osc1 = notificationAudioCtx.createOscillator();
+    const gain1 = notificationAudioCtx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(587.33, t); // D5
+    gain1.gain.setValueAtTime(0.001, t);
+    gain1.gain.exponentialRampToValueAtTime(0.14, t + 0.02);
+    gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+    osc1.connect(gain1);
+    gain1.connect(notificationAudioCtx.destination);
+    osc1.start(t);
+    osc1.stop(t + 0.25);
+
+    const osc2 = notificationAudioCtx.createOscillator();
+    const gain2 = notificationAudioCtx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(880, t + 0.08); // A5
+    gain2.gain.setValueAtTime(0.001, t + 0.08);
+    gain2.gain.exponentialRampToValueAtTime(0.18, t + 0.1);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+    osc2.connect(gain2);
+    gain2.connect(notificationAudioCtx.destination);
+    osc2.start(t + 0.08);
+    osc2.stop(t + 0.4);
+  } catch (_) {}
+}
+
+export function requestBrowserNotificationPermission() {
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    if (Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+  }
+}
+
+export function showSystemNotification({ title, body, icon, onClick } = {}) {
+  try {
+    if (
+      typeof window !== 'undefined' &&
+      'Notification' in window &&
+      Notification.permission === 'granted' &&
+      document.visibilityState === 'hidden'
+    ) {
+      const notif = new Notification(title || 'FreeTime Sync', {
+        body: body || 'Bạn có tin nhắn mới',
+        icon: icon || '/favicon.ico',
+        tag: 'freetime-chat-notif',
+        renotify: true
+      });
+      notif.onclick = () => {
+        window.focus();
+        if (typeof onClick === 'function') onClick();
+        notif.close();
+      };
+    }
+  } catch (_) {}
+}
+
+const DEFAULT_DOC_TITLE = 'FreeTime Sync — Lịch làm việc & Trò chuyện nhóm';
+export function updateDocumentTitle(unreadCount) {
+  if (typeof document === 'undefined') return;
+  if (unreadCount > 0) {
+    document.title = `(${unreadCount}) 💬 Tin nhắn mới | FreeTime Sync`;
+  } else {
+    document.title = DEFAULT_DOC_TITLE;
+  }
+}
