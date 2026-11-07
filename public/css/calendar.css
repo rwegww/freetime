@@ -481,7 +481,7 @@
   flex-shrink: 0;
 }
 
-/* Legend */
+/* Legend & View Switcher */
 .grid-legend-bar {
   display: flex;
   align-items: center;
@@ -489,8 +489,51 @@
   padding: 0 14px 6px;
   font-size: 11px;
   color: var(--text-secondary);
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.grid-view-switcher {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-muted);
+  padding: 2.5px;
+  border-radius: 9px;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.view-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.view-pill:hover {
+  color: var(--text-main);
+}
+
+.view-pill.active {
+  background: #fff;
+  color: var(--primary);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.view-pill-icon {
+  font-size: 11px;
 }
 
 .legend-items {
@@ -916,6 +959,231 @@
   margin-left: 0;
 }
 
+/* ==================== 3-SHIFT VIEW (7-12, 12-5, 5-10H) ==================== */
+#unifiedScheduleTable[data-calendar-view="shifts"] .time-col-header {
+  width: 74px;
+}
+
+.shift-time-cell {
+  vertical-align: middle;
+  padding: 8px 6px 8px 4px;
+  text-align: center;
+  border-right: 1px solid #edf0f5;
+  background: #fff;
+}
+
+.shift-time-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  line-height: 1.2;
+}
+
+.shift-time-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.shift-time-badge {
+  display: inline-block;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 1.5px 6px;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.shift-time-range {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.shift-time-cell.is-now-shift {
+  background: #fff1f2;
+}
+
+.shift-time-cell.is-now-shift .shift-time-name {
+  color: var(--rose);
+}
+
+.shift-time-cell.is-now-shift .shift-time-badge {
+  background: var(--rose);
+  color: #fff;
+}
+
+/* Shift Slot Cell */
+.unified-slot-cell.shift-slot-cell {
+  height: clamp(86px, calc((100dvh - 240px) / 3), 135px);
+  padding: 0;
+  vertical-align: top;
+  border-top: 1px solid #edf0f5;
+  border-left: 1px solid #edf0f5;
+  transition: all 0.15s ease;
+}
+
+.shift-row:first-child .shift-slot-cell,
+.shift-row:first-child .shift-time-cell {
+  border-top: none;
+}
+
+.shift-cell-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 7px 5px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.shift-cell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  line-height: 1;
+}
+
+.shift-cell-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.shift-cell-ratio {
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.82;
+}
+
+.shift-cell-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3px 0;
+  min-height: 0;
+}
+
+.shift-cell-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.shift-label-busy {
+  color: #3730a3;
+}
+
+.shift-frac {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.shift-label-free {
+  color: #047857;
+}
+
+.shift-label-partial {
+  color: #92400e;
+}
+
+.shift-label-past {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.shift-label-none {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.shift-cell-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 18px;
+  gap: 4px;
+}
+
+.shift-cell-avatars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.shift-cell-avatars .mini-dot {
+  width: 16px;
+  height: 16px;
+  font-size: 8.5px;
+}
+
+.shift-slot-cell .btn-cell-inspect {
+  opacity: 0.8;
+}
+
+@media (hover: hover) {
+  .shift-slot-cell:hover .btn-cell-inspect {
+    display: inline-flex;
+    opacity: 1;
+  }
+}
+
+.shift-slot-cell.cell-my-busy {
+  background-color: #e3e8ff;
+  box-shadow: inset 4px 0 0 var(--primary);
+}
+
+.shift-slot-cell.cell-all-free {
+  background-color: #e6f8ef;
+}
+
+.shift-slot-cell.cell-partial {
+  background-color: #fdf4dc;
+}
+
+.shift-slot-cell.cell-none {
+  background-color: #f4f5f8;
+  background-image: repeating-linear-gradient(135deg, transparent 0 8px, rgba(148, 163, 184, 0.12) 8px 10px);
+}
+
+.shift-slot-cell.is-now-shift-cell {
+  box-shadow: inset 0 0 0 2px rgba(244, 63, 94, 0.45);
+}
+
+/* Hourly Shift Divider Lines */
+.shift-divider-morning {
+  border-top: 2px solid #cbd5e1;
+}
+
+.shift-divider-afternoon {
+  border-top: 2px solid #a5b4fc;
+}
+
+.shift-divider-evening {
+  border-top: 2px solid #fbcfe8;
+}
+
 /* Slot Inspector Modal */
 .slot-availability-summary {
   padding: 11px 13px;
@@ -1295,7 +1563,17 @@
   .grid-legend-bar {
     padding: 0 10px 4px;
     font-size: 10.5px;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .grid-view-switcher {
+    padding: 2px;
+  }
+
+  .view-pill {
+    padding: 3px 7px;
+    font-size: 10.5px;
   }
 
   .legend-items {
@@ -1397,6 +1675,59 @@
 
   #unifiedScheduleTable:not([data-mobile-day="all"]) .unified-slot-cell {
     height: 38px;
+  }
+
+  /* 3-shift view responsive rules on mobile */
+  #unifiedScheduleTable[data-calendar-view="shifts"] .time-col-header {
+    width: 46px;
+  }
+
+  #unifiedScheduleTable[data-calendar-view="shifts"] .shift-time-cell {
+    padding: 4px 2px;
+  }
+
+  #unifiedScheduleTable[data-calendar-view="shifts"] .shift-time-name {
+    font-size: 10.5px;
+  }
+
+  #unifiedScheduleTable[data-calendar-view="shifts"] .shift-time-badge {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+
+  #unifiedScheduleTable[data-calendar-view="shifts"] .shift-time-range {
+    display: none;
+  }
+
+  #unifiedScheduleTable[data-calendar-view="shifts"][data-mobile-day="all"] .shift-slot-cell {
+    height: clamp(80px, calc((100dvh - 235px) / 3), 130px);
+  }
+
+  #unifiedScheduleTable[data-calendar-view="shifts"][data-mobile-day="all"] .shift-cell-inner {
+    padding: 4px 2px 3px;
+  }
+
+  #unifiedScheduleTable[data-calendar-view="shifts"][data-mobile-day="all"] .shift-cell-tag {
+    display: none;
+  }
+
+  #unifiedScheduleTable[data-calendar-view="shifts"][data-mobile-day="all"] .shift-cell-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    -webkit-line-clamp: 3;
+    line-height: 1.25;
+  }
+
+  #unifiedScheduleTable[data-calendar-view="shifts"][data-mobile-day="all"] .shift-cell-avatars {
+    display: none;
+  }
+
+  #unifiedScheduleTable[data-calendar-view="shifts"][data-mobile-day="all"] .shift-cell-ratio {
+    font-size: 9px;
+  }
+
+  #unifiedScheduleTable[data-calendar-view="shifts"]:not([data-mobile-day="all"]) .shift-slot-cell {
+    height: clamp(90px, calc((100dvh - 240px) / 3), 140px);
   }
 
   #unifiedScheduleTable[data-mobile-day="0"] :is(th, td)[data-day]:not([data-day="0"]),

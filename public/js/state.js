@@ -11,6 +11,7 @@ export const state = {
   currentWeekMonday: getMondayOfDate(new Date()),
   selectedFilterMemberIds: new Set(),
   paintMode: 'busy', // 'busy' | 'free' | 'inspect'
+  calendarViewMode: (typeof window !== 'undefined' && window.localStorage && localStorage.getItem('freetime_calendar_view')) || 'shifts', // 'shifts' | 'hours'
   selectedColor: '#6366f1',
   profileColor: '#6366f1',
   inspectedSlot: null,

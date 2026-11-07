@@ -1404,6 +1404,18 @@ function bindWorkspaceEvents() {
     btn.addEventListener('click', () => switchMobileTab(btn.dataset.tab));
   });
 
+  // Chuyển đổi chế độ xem lịch: 3 Ca (7-12, 12-5, 5-10h) hoặc Từng giờ (15h)
+  document.querySelectorAll('[data-calendar-view]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.calendarView;
+      state.calendarViewMode = mode;
+      try {
+        localStorage.setItem('freetime_calendar_view', mode);
+      } catch (_) {}
+      renderUnifiedScheduleSection();
+    });
+  });
+
   document.querySelectorAll('.btn-preset[data-preset]').forEach(btn => {
     btn.addEventListener('click', () => {
       const me = getActiveMember();
@@ -1444,25 +1456,24 @@ function bindWorkspaceEvents() {
 
         if (preset === 'office') {
           for (const d of editableWeekdays) {
-            for (let h = 8; h < 12; h++) mySched[`${d}-${h}`] = { status: 'busy', note: 'Ca sáng hành chính' };
-            for (let h = 13; h < 17; h++) mySched[`${d}-${h}`] = { status: 'busy', note: 'Ca chiều hành chính' };
+            for (let h = 7; h < 17; h++) mySched[`${d}-${h}`] = { status: 'busy', note: 'Sáng + Chiều' };
           }
-          showToast(`Đã đăng ký lịch Hành chính cho ${dayRangeNote} (8h-12h & 13h-17h).`);
+          showToast(`Đã đăng ký lịch Sáng + Chiều cho ${dayRangeNote} (07h-17h).`);
         } else if (preset === 'morning') {
           for (const d of editableWeekdays) {
-            for (let h = 8; h < 12; h++) mySched[`${d}-${h}`] = { status: 'busy', note };
+            for (let h = 7; h < 12; h++) mySched[`${d}-${h}`] = { status: 'busy', note: note || 'Ca sáng (7-12)' };
           }
-          showToast(`Đã đăng ký Ca sáng cho ${dayRangeNote} (8h-12h).`);
+          showToast(`Đã đăng ký Ca sáng (7-12) cho ${dayRangeNote} (07h-12h).`);
         } else if (preset === 'afternoon') {
           for (const d of editableWeekdays) {
-            for (let h = 13; h < 17; h++) mySched[`${d}-${h}`] = { status: 'busy', note };
+            for (let h = 12; h < 17; h++) mySched[`${d}-${h}`] = { status: 'busy', note: note || 'Ca chiều (12-5)' };
           }
-          showToast(`Đã đăng ký Ca chiều cho ${dayRangeNote} (13h-17h).`);
+          showToast(`Đã đăng ký Ca chiều (12-5) cho ${dayRangeNote} (12h-17h).`);
         } else if (preset === 'evening') {
           for (const d of editableWeekdays) {
-            for (let h = 18; h < 21; h++) mySched[`${d}-${h}`] = { status: 'busy', note };
+            for (let h = 17; h < 22; h++) mySched[`${d}-${h}`] = { status: 'busy', note: note || 'Ca tối (5-10h)' };
           }
-          showToast(`Đã đăng ký Ca tối cho ${dayRangeNote} (18h-21h).`);
+          showToast(`Đã đăng ký Ca tối (5-10h) cho ${dayRangeNote} (17h-22h).`);
         }
       }
 
@@ -1680,7 +1691,7 @@ function bindWorkspaceEvents() {
     const me = getActiveMember();
     if (!me) return;
 
-    const { dayIndex, hour } = state.inspectedSlot;
+    const { dayIndex, hour, endHour } = state.inspectedSlot;
     if (isDayIndexPast(dayIndex)) {
       showToast('🔒 Không thể đăng ký hoặc chỉnh sửa lịch của ngày đã qua.');
       return;
@@ -1690,18 +1701,28 @@ function bindWorkspaceEvents() {
     if (!state.room.schedules[weekKey][me.id]) state.room.schedules[weekKey][me.id] = {};
 
     const mySched = state.room.schedules[weekKey][me.id];
-    const key = `${dayIndex}-${hour}`;
-    if (mySched[key] && mySched[key].status === 'busy') {
-      delete mySched[key];
-      showToast(`Đã hủy lịch làm việc của bạn vào ${DAY_NAMES[dayIndex]} (${formatHourRange(hour)}).`);
+    const targetEnd = (endHour && endHour > hour) ? endHour : (hour + 1);
+    const hoursSpan = [];
+    for (let h = hour; h < targetEnd; h++) hoursSpan.push(h);
+
+    const isAllBusy = hoursSpan.every(h => {
+      const e = mySched[`${dayIndex}-${h}`];
+      return e && e.status === 'busy';
+    });
+
+    if (isAllBusy) {
+      hoursSpan.forEach(h => delete mySched[`${dayIndex}-${h}`]);
+      showToast(`Đã hủy lịch bận của bạn vào ${DAY_NAMES[dayIndex]} (${formatHourRange(hour, targetEnd)}).`);
     } else {
-      mySched[key] = { status: 'busy', note: 'Bận' };
-      showToast(`Đã đánh dấu bận vào ${DAY_NAMES[dayIndex]} (${formatHourRange(hour)}).`);
+      hoursSpan.forEach(h => {
+        mySched[`${dayIndex}-${h}`] = { status: 'busy', note: 'Bận' };
+      });
+      showToast(`Đã đánh dấu bận vào ${DAY_NAMES[dayIndex]} (${formatHourRange(hour, targetEnd)}).`);
     }
 
     renderUnifiedScheduleSection();
     syncMyScheduleToServer();
-    openSlotInspector(dayIndex, hour);
+    openSlotInspector(dayIndex, hour, targetEnd);
   });
 
   document.getElementById('btnSendSlotProposal').addEventListener('click', () => {

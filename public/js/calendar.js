@@ -18,6 +18,7 @@ import {
 import {
   state,
   getWeekKey,
+  getWeekSchedules,
   isDayIndexPast,
   getActiveMember,
   getMemberSchedule,
@@ -30,6 +31,78 @@ let syncDebounce = null;
 let didInitialTodayScroll = false;
 let busyRangeMode = 'single'; // 'single' | 'multi'
 let busyRangeHoursInitialized = false;
+
+export const SHIFTS = [
+  {
+    id: 'morning',
+    name: 'Sáng',
+    badgeText: '7-12',
+    rangeLabel: '07:00 - 12:00',
+    shortLabel: '7-12',
+    startHour: 7,
+    endHour: 12,
+    hours: [7, 8, 9, 10, 11]
+  },
+  {
+    id: 'afternoon',
+    name: 'Chiều',
+    badgeText: '12-5',
+    rangeLabel: '12:00 - 17:00',
+    shortLabel: '12-5',
+    startHour: 12,
+    endHour: 17,
+    hours: [12, 13, 14, 15, 16]
+  },
+  {
+    id: 'evening',
+    name: 'Tối',
+    badgeText: '5-10h',
+    rangeLabel: '17:00 - 22:00',
+    shortLabel: '5-10h',
+    startHour: 17,
+    endHour: 22,
+    hours: [17, 18, 19, 20, 21]
+  }
+];
+
+export function getShiftAvailability(dayIndex, shift, targetMembers = getFilteredMembers()) {
+  const weekSched = getWeekSchedules();
+  const total = targetMembers.length;
+  const freeMembers = [];
+  const busyMembers = [];
+
+  targetMembers.forEach(m => {
+    const mSched = weekSched[m.id] || {};
+    const busyEntries = [];
+    shift.hours.forEach(h => {
+      const entry = mSched[`${dayIndex}-${h}`];
+      if (entry && entry.status === 'busy') {
+        busyEntries.push({ hour: h, note: entry.note || 'Bận' });
+      }
+    });
+
+    if (busyEntries.length === 0) {
+      freeMembers.push(m);
+    } else {
+      const distinctNotes = Array.from(new Set(busyEntries.map(e => e.note)));
+      busyMembers.push({
+        member: m,
+        busyHoursCount: busyEntries.length,
+        totalHours: shift.hours.length,
+        isFull: busyEntries.length === shift.hours.length,
+        note: distinctNotes.join(', ') || 'Bận'
+      });
+    }
+  });
+
+  return {
+    total,
+    freeCount: freeMembers.length,
+    busyCount: busyMembers.length,
+    freeMembers,
+    busyMembers
+  };
+}
 
 export function renderMemberFilterChips() {
   const container = document.getElementById('memberFilterChips');
@@ -128,6 +201,21 @@ export function renderUnifiedScheduleSection() {
 
   renderMobileDayStrip();
 
+  const isShifts = state.calendarViewMode !== 'hours';
+  const table = document.getElementById('unifiedScheduleTable');
+  if (table) table.dataset.calendarView = isShifts ? 'shifts' : 'hours';
+
+  const btnShifts = document.getElementById('btnViewShifts');
+  const btnHours = document.getElementById('btnViewHours');
+  if (btnShifts) {
+    btnShifts.classList.toggle('active', isShifts);
+    btnShifts.setAttribute('aria-selected', String(isShifts));
+  }
+  if (btnHours) {
+    btnHours.classList.toggle('active', !isShifts);
+    btnHours.setAttribute('aria-selected', String(!isShifts));
+  }
+
   // 1. Render Table Header
   const headTr = document.getElementById('unifiedTableHeadRow');
   headTr.innerHTML = `<th class="time-col-header"></th>`;
@@ -184,101 +272,227 @@ export function renderUnifiedScheduleSection() {
     return i.total > 0 && i.freeCount === i.total;
   };
 
-  for (let h = START_HOUR; h < END_HOUR; h++) {
-    const tr = document.createElement('tr');
-    const timeTd = document.createElement('td');
-    timeTd.className = 'time-cell';
-    if (todayIndex !== -1 && h === nowHour) timeTd.classList.add('is-now-hour');
-    timeTd.textContent = `${String(h).padStart(2, '0')}:00`;
-    timeTd.title = formatHourRange(h);
-    tr.appendChild(timeTd);
+  if (isShifts) {
+    // ==================== CHẾ ĐỘ 3 CA (SÁNG 7-12, CHIỀU 12-5, TỐI 5-10H) ====================
+    for (const shift of SHIFTS) {
+      const tr = document.createElement('tr');
+      tr.className = `shift-row shift-row-${shift.id}`;
 
-    for (let d = 0; d < 7; d++) {
-      const key = `${d}-${h}`;
-      const isPast = isDayIndexPast(d);
-      const myEntry = mySched[key];
-      const isMyBusy = myEntry && myEntry.status === 'busy';
-      const myBusyNote = isMyBusy ? (myEntry.note || 'Bận') : '';
-
-      const info = getSlotAvailability(d, h, targetMembers);
-      const isAllFree = info.total > 0 && info.freeCount === info.total;
-      if (!isPast && isAllFree) allFreeSlotsCount++;
-
-      const td = document.createElement('td');
-      td.dataset.day = String(d);
-      const classes = ['unified-slot-cell'];
-      let isBlockCont = false;
-      if (isPast) {
-        classes.push('is-past-day');
-        if (isMyBusy) {
-          classes.push('cell-my-busy');
-          isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
-        } else {
-          classes.push('cell-past-locked');
-          isBlockCont = h > START_HOUR && !isMyBusyAt(d, h - 1);
-        }
-      } else if (isMyBusy) {
-        classes.push('cell-my-busy');
-        isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
-      } else if (isAllFree) {
-        classes.push('cell-all-free');
-        isBlockCont = isAllFreeAt(d, h - 1);
-      } else if (info.freeCount > 0) {
-        classes.push('cell-partial');
-      } else {
-        classes.push('cell-none');
-      }
-      if (isBlockCont) classes.push('block-cont');
-      if (d === todayIndex) classes.push('is-today');
-      if (d === todayIndex && h === nowHour) {
-        classes.push('is-now');
-        td.style.setProperty('--now-offset', `${nowOffsetPct}%`);
-      }
-      td.className = classes.join(' ');
-
-      const freeNames = info.freeMembers.map(m => m.name).join(', ') || 'Không ai';
-      td.title = `${DAY_NAMES[d]} • ${formatHourRange(h)}\nTrống ${info.freeCount}/${info.total}: ${freeNames}` +
-        (isMyBusy ? `\nBạn: ${myBusyNote}` : '') +
-        (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
-
-      let labelHtml = '';
-      if (isMyBusy) {
-        labelHtml = !isBlockCont
-          ? `<span class="cell-label">${escapeHtml(myBusyNote)}</span>`
-          : `<span class="cell-label"></span>`;
-      } else if (isPast) {
-        labelHtml = `<span class="cell-label"></span>`;
-      } else if (isAllFree && !isBlockCont) {
-        labelHtml = `<span class="cell-label cell-free-text">Nhóm rảnh</span>`;
-      } else if (!isMyBusy && !isAllFree && info.freeCount > 0) {
-        labelHtml = `<span class="cell-label cell-partial-names">Trống: ${escapeHtml(freeNames)}</span>`;
-      } else {
-        labelHtml = `<span class="cell-label"></span>`;
-      }
-
-      const freeAvatarsHtml = !isPast && !isMyBusy && !isAllFree
-        ? info.freeMembers
-          .slice(0, 3)
-          .map(m => renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'mini-dot' }))
-          .join('')
-        : '';
-
-      td.innerHTML = `
-        <div class="cell-inner">
-          ${labelHtml}
-          <span class="cell-right">
-            <span class="cell-avatars">${freeAvatarsHtml}</span>
-            <span class="cell-ratio">${info.freeCount}/${info.total}</span>
-            <button type="button" class="btn-cell-inspect" title="Xem chi tiết ai rảnh / ai bận & đề xuất lịch hẹn">i</button>
-          </span>
+      const timeTd = document.createElement('td');
+      timeTd.className = 'time-cell shift-time-cell';
+      const isNowInShift = todayIndex !== -1 && nowHour >= shift.startHour && nowHour < shift.endHour;
+      if (isNowInShift) timeTd.classList.add('is-now-shift');
+      timeTd.innerHTML = `
+        <div class="shift-time-inner">
+          <strong class="shift-time-name">${shift.name}</strong>
+          <span class="shift-time-badge">${shift.badgeText}</span>
+          <span class="shift-time-range">${shift.rangeLabel}</span>
         </div>
       `;
+      timeTd.title = `Ca ${shift.name} • ${shift.rangeLabel}`;
+      tr.appendChild(timeTd);
 
-      bindSlotCellInteractions(td, d, h);
-      tr.appendChild(td);
+      for (let d = 0; d < 7; d++) {
+        const isPast = isDayIndexPast(d);
+        const myBusyEntries = [];
+        shift.hours.forEach(h => {
+          const e = mySched[`${d}-${h}`];
+          if (e && e.status === 'busy') {
+            myBusyEntries.push({ hour: h, note: e.note || 'Bận' });
+          }
+        });
+        const isMyBusy = myBusyEntries.length > 0;
+        const isMyFullyBusy = myBusyEntries.length === shift.hours.length;
+        const myDistinctNotes = Array.from(new Set(myBusyEntries.map(e => e.note)));
+        const myBusyNote = myDistinctNotes.join(', ') || 'Bận';
+
+        const info = getShiftAvailability(d, shift, targetMembers);
+        const isAllFree = info.total > 0 && info.freeCount === info.total;
+        if (!isPast && isAllFree) {
+          allFreeSlotsCount += shift.hours.length;
+        }
+
+        const td = document.createElement('td');
+        td.dataset.day = String(d);
+        td.dataset.shift = shift.id;
+        const classes = ['unified-slot-cell', 'shift-slot-cell'];
+
+        if (isPast) {
+          classes.push('is-past-day');
+          if (isMyBusy) {
+            classes.push('cell-my-busy');
+          } else {
+            classes.push('cell-past-locked');
+          }
+        } else if (isMyBusy) {
+          classes.push('cell-my-busy');
+        } else if (isAllFree) {
+          classes.push('cell-all-free');
+        } else if (info.freeCount > 0) {
+          classes.push('cell-partial');
+        } else {
+          classes.push('cell-none');
+        }
+
+        if (d === todayIndex) {
+          classes.push('is-today');
+          if (nowHour >= shift.startHour && nowHour < shift.endHour) {
+            classes.push('is-now-shift-cell');
+          }
+        }
+
+        td.className = classes.join(' ');
+
+        const freeNames = info.freeMembers.map(m => m.name).join(', ') || 'Không ai';
+        td.title = `${DAY_NAMES[d]} • Ca ${shift.name} (${shift.rangeLabel})\n` +
+          `Trống ${info.freeCount}/${info.total}: ${freeNames}` +
+          (isMyBusy ? `\nBạn: ${myBusyNote} (${myBusyEntries.length}/${shift.hours.length}h)` : '') +
+          (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
+
+        let statusHtml = '';
+        if (isMyBusy) {
+          const frac = !isMyFullyBusy ? `<small class="shift-frac">(${myBusyEntries.length}/5h)</small>` : '';
+          statusHtml = `<span class="shift-cell-label shift-label-busy">📌 ${escapeHtml(myBusyNote)}${frac}</span>`;
+        } else if (isPast) {
+          statusHtml = `<span class="shift-cell-label shift-label-past">Đã qua</span>`;
+        } else if (isAllFree) {
+          statusHtml = `<span class="shift-cell-label shift-label-free">✨ Nhóm rảnh</span>`;
+        } else if (info.freeCount > 0) {
+          statusHtml = `<span class="shift-cell-label shift-label-partial">⚡ Trống ${info.freeCount}/${info.total}</span>`;
+        } else {
+          statusHtml = `<span class="shift-cell-label shift-label-none">Bận cả nhóm</span>`;
+        }
+
+        const freeAvatarsHtml = !isPast && !isMyBusy && !isAllFree && info.freeMembers.length > 0
+          ? info.freeMembers
+              .slice(0, 3)
+              .map(m => renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'mini-dot' }))
+              .join('')
+          : '';
+
+        td.innerHTML = `
+          <div class="shift-cell-inner">
+            <div class="shift-cell-header">
+              <span class="shift-cell-tag">${shift.badgeText}</span>
+              <span class="shift-cell-ratio">${info.freeCount}/${info.total}</span>
+            </div>
+            <div class="shift-cell-main">
+              ${statusHtml}
+            </div>
+            <div class="shift-cell-footer">
+              <div class="shift-cell-avatars">${freeAvatarsHtml}</div>
+              <button type="button" class="btn-cell-inspect" title="Xem chi tiết ca ${shift.name} (${shift.rangeLabel})">i</button>
+            </div>
+          </div>
+        `;
+
+        bindShiftCellInteractions(td, d, shift);
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
     }
+  } else {
+    // ==================== CHẾ ĐỘ TỪNG GIỜ (15H: 07:00 - 22:00) ====================
+    for (let h = START_HOUR; h < END_HOUR; h++) {
+      const tr = document.createElement('tr');
+      if (h === 7) tr.classList.add('shift-divider-morning');
+      if (h === 12) tr.classList.add('shift-divider-afternoon');
+      if (h === 17) tr.classList.add('shift-divider-evening');
 
-    tbody.appendChild(tr);
+      const timeTd = document.createElement('td');
+      timeTd.className = 'time-cell';
+      if (todayIndex !== -1 && h === nowHour) timeTd.classList.add('is-now-hour');
+      timeTd.textContent = `${String(h).padStart(2, '0')}:00`;
+      timeTd.title = formatHourRange(h);
+      tr.appendChild(timeTd);
+
+      for (let d = 0; d < 7; d++) {
+        const key = `${d}-${h}`;
+        const isPast = isDayIndexPast(d);
+        const myEntry = mySched[key];
+        const isMyBusy = myEntry && myEntry.status === 'busy';
+        const myBusyNote = isMyBusy ? (myEntry.note || 'Bận') : '';
+
+        const info = getSlotAvailability(d, h, targetMembers);
+        const isAllFree = info.total > 0 && info.freeCount === info.total;
+        if (!isPast && isAllFree) allFreeSlotsCount++;
+
+        const td = document.createElement('td');
+        td.dataset.day = String(d);
+        const classes = ['unified-slot-cell'];
+        let isBlockCont = false;
+        if (isPast) {
+          classes.push('is-past-day');
+          if (isMyBusy) {
+            classes.push('cell-my-busy');
+            isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
+          } else {
+            classes.push('cell-past-locked');
+            isBlockCont = h > START_HOUR && !isMyBusyAt(d, h - 1);
+          }
+        } else if (isMyBusy) {
+          classes.push('cell-my-busy');
+          isBlockCont = h > START_HOUR && isSameMyBusyNoteAt(d, h - 1, myBusyNote);
+        } else if (isAllFree) {
+          classes.push('cell-all-free');
+          isBlockCont = isAllFreeAt(d, h - 1);
+        } else if (info.freeCount > 0) {
+          classes.push('cell-partial');
+        } else {
+          classes.push('cell-none');
+        }
+        if (isBlockCont) classes.push('block-cont');
+        if (d === todayIndex) classes.push('is-today');
+        if (d === todayIndex && h === nowHour) {
+          classes.push('is-now');
+          td.style.setProperty('--now-offset', `${nowOffsetPct}%`);
+        }
+        td.className = classes.join(' ');
+
+        const freeNames = info.freeMembers.map(m => m.name).join(', ') || 'Không ai';
+        td.title = `${DAY_NAMES[d]} • ${formatHourRange(h)}\nTrống ${info.freeCount}/${info.total}: ${freeNames}` +
+          (isMyBusy ? `\nBạn: ${myBusyNote}` : '') +
+          (isPast ? '\n🔒 Ngày đã qua — không thể đăng ký lịch' : '');
+
+        let labelHtml = '';
+        if (isMyBusy) {
+          labelHtml = !isBlockCont
+            ? `<span class="cell-label">${escapeHtml(myBusyNote)}</span>`
+            : `<span class="cell-label"></span>`;
+        } else if (isPast) {
+          labelHtml = `<span class="cell-label"></span>`;
+        } else if (isAllFree && !isBlockCont) {
+          labelHtml = `<span class="cell-label cell-free-text">Nhóm rảnh</span>`;
+        } else if (!isMyBusy && !isAllFree && info.freeCount > 0) {
+          labelHtml = `<span class="cell-label cell-partial-names">Trống: ${escapeHtml(freeNames)}</span>`;
+        } else {
+          labelHtml = `<span class="cell-label"></span>`;
+        }
+
+        const freeAvatarsHtml = !isPast && !isMyBusy && !isAllFree
+          ? info.freeMembers
+            .slice(0, 3)
+            .map(m => renderAvatarHtml({ avatar: m.avatar, name: m.name, color: m.color, className: 'mini-dot' }))
+            .join('')
+          : '';
+
+        td.innerHTML = `
+          <div class="cell-inner">
+            ${labelHtml}
+            <span class="cell-right">
+              <span class="cell-avatars">${freeAvatarsHtml}</span>
+              <span class="cell-ratio">${info.freeCount}/${info.total}</span>
+              <button type="button" class="btn-cell-inspect" title="Xem chi tiết ai rảnh / ai bận & đề xuất lịch hẹn">i</button>
+            </span>
+          </div>
+        `;
+
+        bindSlotCellInteractions(td, d, h);
+        tr.appendChild(td);
+      }
+
+      tbody.appendChild(tr);
+    }
   }
 
   // 3. Update Summary Stats
@@ -386,6 +600,120 @@ function bindSlotCellInteractions(td, d, h) {
   });
 }
 
+export function applyPersonalShiftPaint(dayIndex, shift) {
+  if (isDayIndexPast(dayIndex)) {
+    showToast('🔒 Không thể đăng ký hoặc chỉnh sửa lịch của ngày đã qua.');
+    return;
+  }
+  const me = getActiveMember();
+  if (!me) return;
+
+  const weekKey = getWeekKey();
+  if (!state.room.schedules[weekKey]) state.room.schedules[weekKey] = {};
+  if (!state.room.schedules[weekKey][me.id]) state.room.schedules[weekKey][me.id] = {};
+
+  const mySched = state.room.schedules[weekKey][me.id];
+  const noteInput = document.getElementById('busyNoteInput').value.trim() || 'Bận';
+
+  const isFullyBusy = shift.hours.every(h => {
+    const e = mySched[`${dayIndex}-${h}`];
+    return e && e.status === 'busy';
+  });
+
+  if (state.paintMode === 'busy') {
+    if (isFullyBusy) {
+      shift.hours.forEach(h => delete mySched[`${dayIndex}-${h}`]);
+    } else {
+      shift.hours.forEach(h => {
+        mySched[`${dayIndex}-${h}`] = { status: 'busy', note: noteInput };
+      });
+    }
+  } else {
+    shift.hours.forEach(h => delete mySched[`${dayIndex}-${h}`]);
+  }
+
+  renderUnifiedScheduleSection();
+  syncMyScheduleToServer();
+}
+
+function bindShiftCellInteractions(td, d, shift) {
+  let longPressTimer = null;
+  let longPressTriggered = false;
+  let pointerMoved = false;
+  let startX = 0;
+  let startY = 0;
+
+  const clearLongPress = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+  };
+
+  const inspectBtn = td.querySelector('.btn-cell-inspect');
+  if (inspectBtn) {
+    inspectBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+    inspectBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openSlotInspector(d, shift.startHour, shift.endHour);
+    });
+  }
+
+  td.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('.btn-cell-inspect')) return;
+    if (e.button !== undefined && e.button !== 0) return;
+
+    pointerMoved = false;
+    longPressTriggered = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    clearLongPress();
+
+    if (e.pointerType !== 'mouse') {
+      longPressTimer = setTimeout(() => {
+        longPressTriggered = true;
+        if (navigator.vibrate) navigator.vibrate(12);
+        openSlotInspector(d, shift.startHour, shift.endHour);
+      }, 430);
+    }
+  });
+
+  td.addEventListener('pointermove', (e) => {
+    if (Math.hypot(e.clientX - startX, e.clientY - startY) > 10) {
+      pointerMoved = true;
+      clearLongPress();
+    }
+  });
+
+  td.addEventListener('pointerup', clearLongPress);
+  td.addEventListener('pointercancel', clearLongPress);
+
+  td.addEventListener('click', (e) => {
+    if (e.target.closest('.btn-cell-inspect')) return;
+    if (longPressTriggered) {
+      longPressTriggered = false;
+      return;
+    }
+    if (pointerMoved) {
+      pointerMoved = false;
+      return;
+    }
+    if (state.paintMode === 'inspect') {
+      openSlotInspector(d, shift.startHour, shift.endHour);
+      return;
+    }
+    if (isDayIndexPast(d)) {
+      showToast('🔒 Không thể đăng ký hoặc chỉnh sửa lịch của ngày đã qua.');
+      return;
+    }
+    if (!state.activeMemberId) {
+      openModal('memberModal');
+      return;
+    }
+    applyPersonalShiftPaint(d, shift);
+  });
+}
+
 export function applyPersonalSlotPaint(dayIndex, hour) {
   if (isDayIndexPast(dayIndex)) {
     showToast('🔒 Không thể đăng ký hoặc chỉnh sửa lịch của ngày đã qua.');
@@ -468,13 +796,49 @@ export function renderBestContinuousSlots(targetMembers = getFilteredMembers()) 
 }
 
 export function openSlotInspector(dayIndex, hour, suggestedEndHour = null) {
-  state.inspectedSlot = { dayIndex, hour };
+  const endHour = suggestedEndHour || Math.min(END_HOUR, hour + 1);
+  state.inspectedSlot = { dayIndex, hour, endHour };
   const isPast = isDayIndexPast(dayIndex);
   const targetMembers = getFilteredMembers();
-  const info = getSlotAvailability(dayIndex, hour, targetMembers);
+
+  let info;
+  if (endHour > hour + 1) {
+    const weekSched = getWeekSchedules();
+    const freeMembers = [];
+    const busyMembers = [];
+    targetMembers.forEach(m => {
+      const mSched = weekSched[m.id] || {};
+      const busyHours = [];
+      for (let h = hour; h < endHour; h++) {
+        const entry = mSched[`${dayIndex}-${h}`];
+        if (entry && entry.status === 'busy') {
+          busyHours.push({ hour: h, note: entry.note || 'Bận' });
+        }
+      }
+      if (busyHours.length === 0) {
+        freeMembers.push(m);
+      } else {
+        const distinctNotes = Array.from(new Set(busyHours.map(e => e.note)));
+        busyMembers.push({
+          member: m,
+          note: `${distinctNotes.join(', ')} (${busyHours.length}/${endHour - hour}h)`
+        });
+      }
+    });
+    info = {
+      total: targetMembers.length,
+      freeCount: freeMembers.length,
+      busyCount: busyMembers.length,
+      freeMembers,
+      busyMembers
+    };
+  } else {
+    info = getSlotAvailability(dayIndex, hour, targetMembers);
+  }
 
   const dateObj = addDays(state.currentWeekMonday, dayIndex);
-  document.getElementById('slotModalTitle').textContent = `${DAY_NAMES[dayIndex]} (${formatShortDM(dateObj)}) • ${formatHourRange(hour)}`;
+  const rangeTitle = endHour > hour + 1 ? formatHourRange(hour, endHour) : formatHourRange(hour);
+  document.getElementById('slotModalTitle').textContent = `${DAY_NAMES[dayIndex]} (${formatShortDM(dateObj)}) • ${rangeTitle}`;
 
   const banner = document.getElementById('slotModalSummaryBanner');
   if (isPast) {
@@ -541,7 +905,7 @@ export function openSlotInspector(dayIndex, hour, suggestedEndHour = null) {
     startSel.appendChild(opt);
   }
 
-  const defaultEnd = suggestedEndHour || Math.min(END_HOUR, hour + 2);
+  const defaultEnd = endHour;
   for (let h = START_HOUR + 1; h <= END_HOUR; h++) {
     const opt = document.createElement('option');
     opt.value = h;
@@ -565,7 +929,7 @@ function ensureBusyRangeHourSelects() {
     const opt = document.createElement('option');
     opt.value = String(h);
     opt.textContent = `${String(h).padStart(2, '0')}:00`;
-    if (h === 8) opt.selected = true;
+    if (h === 7) opt.selected = true;
     startSel.appendChild(opt);
   }
 
@@ -574,7 +938,7 @@ function ensureBusyRangeHourSelects() {
     const opt = document.createElement('option');
     opt.value = String(h);
     opt.textContent = `${String(h).padStart(2, '0')}:00`;
-    if (h === 17) opt.selected = true;
+    if (h === 22) opt.selected = true;
     endSel.appendChild(opt);
   }
 
@@ -700,8 +1064,8 @@ function validateBusyRangeInputs() {
   const endDateStr = busyRangeMode === 'single' ? startDateStr : (endInput ? endInput.value : '');
   const startDt = parseLocalDateKey(startDateStr);
   const endDt = parseLocalDateKey(endDateStr);
-  const startHour = startSel ? parseInt(startSel.value, 10) : 8;
-  const endHour = endSel ? parseInt(endSel.value, 10) : 17;
+  const startHour = startSel ? parseInt(startSel.value, 10) : 7;
+  const endHour = endSel ? parseInt(endSel.value, 10) : 22;
 
   if (!startDt || !endDt) {
     return { valid: false, error: 'Vui lòng chọn đầy đủ ngày bận.' };

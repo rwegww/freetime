@@ -378,10 +378,10 @@
           <div class="preset-group">
             <span class="toolbar-label">Nhanh T2–T6</span>
             <button type="button" class="btn-preset" id="btnOpenBusyRangeFromDrawer" title="Nhập khoảng giờ bận cho 1 ngày hoặc nhiều ngày liên tiếp">📅 Chọn ngày &amp; giờ...</button>
-            <button class="btn-preset" data-preset="office" title="8h-12h & 13h-17h">Hành chính</button>
-            <button class="btn-preset" data-preset="morning" title="8h-12h">Sáng</button>
-            <button class="btn-preset" data-preset="afternoon" title="13h-17h">Chiều</button>
-            <button class="btn-preset" data-preset="evening" title="18h-21h">Tối</button>
+            <button class="btn-preset" data-preset="morning" title="7h-12h">Ca sáng (7-12h)</button>
+            <button class="btn-preset" data-preset="afternoon" title="12h-17h">Ca chiều (12-5h)</button>
+            <button class="btn-preset" data-preset="evening" title="17h-22h">Ca tối (5-10h)</button>
+            <button class="btn-preset" data-preset="office" title="7h-17h">Sáng + Chiều (7-17h)</button>
             <button class="btn-preset danger" data-preset="clear" title="Xóa toàn bộ lịch tuần này của bạn">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
               Xóa tuần
@@ -418,8 +418,18 @@
         </div>
       </div>
 
-      <!-- Chú thích siêu gọn 1 dòng -->
+      <!-- Chú thích & Bộ chuyển đổi chế độ xem: 3 Ca (7-12, 12-5, 5-10h) hoặc Từng giờ (15h) -->
       <div class="grid-legend-bar">
+        <div class="grid-view-switcher" role="tablist" aria-label="Chế độ xem lịch">
+          <button type="button" class="view-pill active" id="btnViewShifts" data-calendar-view="shifts" role="tab" aria-selected="true" title="Chia ngày thành 3 ca: Sáng (7-12), Chiều (12-5), Tối (5-10h)">
+            <span class="view-pill-icon">⚡</span>
+            <span>3 Ca (7-12, 12-5, 5-10h)</span>
+          </button>
+          <button type="button" class="view-pill" id="btnViewHours" data-calendar-view="hours" role="tab" aria-selected="false" title="Xem chi tiết từng giờ (15 tiếng: 07:00 - 22:00)">
+            <span>Từng giờ (15h)</span>
+          </button>
+        </div>
+
         <div class="legend-items">
           <span class="legend-item"><i class="swatch swatch-my-busy"></i> Bạn bận</span>
           <span class="legend-item"><i class="swatch swatch-100"></i> Nhóm rảnh</span>
@@ -622,11 +632,11 @@
           </div>
 
           <div class="busy-quick-chips" id="busyQuickHourChips" aria-label="Chọn nhanh ca giờ">
-            <button type="button" class="busy-chip" data-quick-hours="8-12">Sáng 08h–12h</button>
-            <button type="button" class="busy-chip" data-quick-hours="13-17">Chiều 13h–17h</button>
-            <button type="button" class="busy-chip active" data-quick-hours="8-17">Cả ca 08h–17h</button>
-            <button type="button" class="busy-chip" data-quick-hours="18-21">Tối 18h–21h</button>
-            <button type="button" class="busy-chip" data-quick-hours="7-22">Cả ngày 07h–22h</button>
+            <button type="button" class="busy-chip" data-quick-hours="7-12">Sáng 07h–12h (7-12)</button>
+            <button type="button" class="busy-chip" data-quick-hours="12-17">Chiều 12h–17h (12-5)</button>
+            <button type="button" class="busy-chip" data-quick-hours="17-22">Tối 17h–22h (5-10h)</button>
+            <button type="button" class="busy-chip" data-quick-hours="7-17">Sáng + Chiều 07h–17h</button>
+            <button type="button" class="busy-chip active" data-quick-hours="7-22">Cả ngày 07h–22h</button>
           </div>
 
           <div class="form-row-inline busy-hour-select-row">
